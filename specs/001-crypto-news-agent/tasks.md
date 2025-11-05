@@ -21,15 +21,15 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Clean up template authentication components (remove login/signup/recover-password/reset-password routes from frontend/src/routes/)
-- [ ] T002 [P] Remove template Items CRUD components (remove frontend/src/components/Items/, frontend/src/components/Admin/)
-- [ ] T003 [P] Remove Chakra UI dependencies from frontend (uninstall @chakra-ui/react, @emotion/react, delete frontend/src/theme.tsx)
-- [ ] T004 [P] Initialize Shadcn UI in frontend (run npx shadcn@latest init with Tailwind CSS)
-- [ ] T005 [P] Add Shadcn UI components for Crypto News Agent (button, input, card, skeleton, alert, toast in frontend/src/components/ui/)
-- [ ] T006 Update environment variables in .env for Ollama and news sources (OLLAMA_HOST, OLLAMA_CHAT_MODEL, OLLAMA_EMBEDDING_MODEL, RSS_DL_NEWS, RSS_THE_DEFIANT, RSS_COINTELEGRAPH)
-- [ ] T007 [P] Install backend dependencies for LangChain and Ollama (langchain, langchain-community, langchain-ollama, feedparser, newspaper3k in backend/)
-- [ ] T008 [P] Install backend dependencies for scheduling (APScheduler in backend/)
-- [ ] T009 [P] Install backend dependencies for pgvector (pgvector-python in backend/)
+- [X] T001 Clean up template authentication components (remove login/signup/recover-password/reset-password routes from frontend/src/routes/)
+- [X] T002 [P] Remove template Items CRUD components (remove frontend/src/components/Items/, frontend/src/components/Admin/)
+- [X] T003 [P] Remove Chakra UI dependencies from frontend (uninstall @chakra-ui/react, @emotion/react, delete frontend/src/theme.tsx)
+- [X] T004 [P] Initialize Shadcn UI in frontend (run npx shadcn@latest init with Tailwind CSS)
+- [X] T005 [P] Add Shadcn UI components for Crypto News Agent (button, input, card, skeleton, alert, toast in frontend/src/components/ui/)
+- [X] T006 Update environment variables in .env for Ollama and news sources (OLLAMA_HOST, OLLAMA_CHAT_MODEL, OLLAMA_EMBEDDING_MODEL, RSS_DL_NEWS, RSS_THE_DEFIANT, RSS_COINTELEGRAPH)
+- [X] T007 [P] Install backend dependencies for LangChain and Ollama (langchain, langchain-community, langchain-ollama, feedparser, newspaper3k in backend/)
+- [X] T008 [P] Install backend dependencies for scheduling (APScheduler in backend/)
+- [X] T009 [P] Install backend dependencies for pgvector (pgvector-python in backend/)
 
 ---
 
