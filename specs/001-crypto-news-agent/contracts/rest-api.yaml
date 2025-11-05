@@ -1,0 +1,314 @@
+openapi: 3.1.0
+info:
+  title: Crypto News Agent API
+  version: 1.0.0
+  description: |
+    REST API for cryptocurrency news ingestion and browsing. WebSocket endpoint for streaming Q&A is documented separately.
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: https://api.crypto-news-agent.example.com
+    description: Production
+
+paths:
+  /api/news:
+    get:
+      summary: List recent news articles
+      description: Retrieve a paginated list of cryptocurrency news articles, optionally filtered by source
+      operationId: listNews
+      tags:
+        - News
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of articles to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          description: Number of articles to skip (for pagination)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: source_name
+          in: query
+          description: Filter by news source name
+          schema:
+            type: string
+            enum: ["DL News", "The Defiant", "Cointelegraph"]
+      responses:
+        '200':
+          description: Successful response with list of articles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  articles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NewsArticle'
+                  total:
+                    type: integer
+                    description: Total number of articles matching filters
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+              example:
+                articles:
+                  - id: 1
+                    title: "Bitcoin Surges to New All-Time High"
+                    url: "https://www.dlnews.com/articles/bitcoin-surges"
+                    source_name: "DL News"
+                    published_at: "2025-11-05T14:30:00Z"
+                    ingested_at: "2025-11-05T14:35:12Z"
+                    content: "Bitcoin reached a new all-time high today..."
+                  - id: 2
+                    title: "Ethereum Layer 2 Adoption Grows"
+                    url: "https://thedefiant.io/ethereum-l2-adoption"
+                    source_name: "The Defiant"
+                    published_at: "2025-11-05T12:15:00Z"
+                    ingested_at: "2025-11-05T12:20:05Z"
+                    content: "Layer 2 solutions for Ethereum are seeing..."
+                total: 245
+                limit: 20
+                offset: 0
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                detail: "limit must be between 1 and 100"
+
+  /api/news/{article_id}:
+    get:
+      summary: Get single news article
+      description: Retrieve full details of a specific news article by ID
+      operationId: getNewsArticle
+      tags:
+        - News
+      parameters:
+        - name: article_id
+          in: path
+          required: true
+          description: Unique identifier of the news article
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response with article details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsArticle'
+              example:
+                id: 1
+                title: "Bitcoin Surges to New All-Time High"
+                url: "https://www.dlnews.com/articles/bitcoin-surges"
+                source_name: "DL News"
+                published_at: "2025-11-05T14:30:00Z"
+                ingested_at: "2025-11-05T14:35:12Z"
+                content: "Bitcoin reached a new all-time high today, breaking through the $100,000 barrier..."
+        '404':
+          description: Article not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                detail: "Article with id 999 not found"
+
+  /api/sources:
+    get:
+      summary: List news sources
+      description: Retrieve all configured news sources with ingestion status
+      operationId: listSources
+      tags:
+        - Sources
+      responses:
+        '200':
+          description: Successful response with list of sources
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sources:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NewsSource'
+              example:
+                sources:
+                  - id: 1
+                    name: "DL News"
+                    rss_url: "https://www.dlnews.com/arc/outboundfeeds/rss/"
+                    is_active: true
+                    last_ingestion_at: "2025-11-05T15:00:00Z"
+                    last_error: null
+                    ingestion_count: 342
+                  - id: 2
+                    name: "The Defiant"
+                    rss_url: "https://thedefiant.io/api/feed"
+                    is_active: true
+                    last_ingestion_at: "2025-11-05T15:00:05Z"
+                    last_error: null
+                    ingestion_count: 289
+                  - id: 3
+                    name: "Cointelegraph"
+                    rss_url: "https://cointelegraph.com/rss"
+                    is_active: true
+                    last_ingestion_at: "2025-11-05T14:58:32Z"
+                    last_error: "Connection timeout"
+                    ingestion_count: 412
+
+  /api/health:
+    get:
+      summary: Health check
+      description: Check API and dependency health status
+      operationId: healthCheck
+      tags:
+        - System
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded]
+                  database:
+                    type: string
+                    enum: [ok, error]
+                  ollama:
+                    type: string
+                    enum: [ok, error]
+                  version:
+                    type: string
+              example:
+                status: "healthy"
+                database: "ok"
+                ollama: "ok"
+                version: "1.0.0"
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [unhealthy]
+                  database:
+                    type: string
+                  ollama:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: string
+              example:
+                status: "unhealthy"
+                database: "error"
+                ollama: "ok"
+                errors: ["Database connection failed"]
+
+components:
+  schemas:
+    NewsArticle:
+      type: object
+      required:
+        - id
+        - title
+        - url
+        - source_name
+        - ingested_at
+        - content
+      properties:
+        id:
+          type: integer
+          description: Unique identifier
+        title:
+          type: string
+          maxLength: 500
+          description: Article headline
+        url:
+          type: string
+          format: uri
+          maxLength: 2048
+          description: Original article URL
+        source_name:
+          type: string
+          maxLength: 100
+          description: News source name
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Article publication timestamp (from RSS feed)
+        ingested_at:
+          type: string
+          format: date-time
+          description: Timestamp when article was ingested
+        content:
+          type: string
+          minLength: 100
+          description: Full article text content
+
+    NewsSource:
+      type: object
+      required:
+        - id
+        - name
+        - rss_url
+        - is_active
+        - ingestion_count
+      properties:
+        id:
+          type: integer
+          description: Unique identifier
+        name:
+          type: string
+          maxLength: 100
+          description: Display name
+        rss_url:
+          type: string
+          format: uri
+          maxLength: 2048
+          description: RSS feed URL
+        is_active:
+          type: boolean
+          description: Whether source is currently being ingested
+        last_ingestion_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp of last successful ingestion
+        last_error:
+          type: string
+          nullable: true
+          maxLength: 1000
+          description: Last error message if ingestion failed
+        ingestion_count:
+          type: integer
+          description: Total number of successful ingestions
+
+    Error:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Human-readable error message
