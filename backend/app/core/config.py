@@ -94,6 +94,19 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
 
+    # Ollama configuration for LLM and embeddings
+    OLLAMA_HOST: str
+    OLLAMA_CHAT_MODEL: str
+    OLLAMA_EMBEDDING_MODEL: str
+
+    # News source RSS URLs
+    RSS_DL_NEWS: str
+    RSS_THE_DEFIANT: str
+    RSS_COINTELEGRAPH: str
+
+    # Ingestion configuration
+    INGESTION_INTERVAL_MINUTES: int
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (
