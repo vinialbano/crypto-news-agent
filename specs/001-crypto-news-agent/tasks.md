@@ -39,11 +39,11 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T010 Create Alembic migration to enable pgvector extension in backend/app/alembic/versions/
-- [ ] T011 Create SQLModel models for NewsSource and NewsArticle in backend/app/models.py with pgvector column
-- [ ] T012 Create SQLModel models for Question, Answer, and AnswerSourceArticle (chat history) in backend/app/models.py
-- [ ] T013 Create Alembic migration to create news_sources and news_articles tables in backend/app/alembic/versions/
-- [ ] T014 Create Alembic migration to create questions, answers, and answer_source_articles tables in backend/app/alembic/versions/
+- [X] T010 Create Alembic migration to enable pgvector extension in backend/app/alembic/versions/
+- [X] T011 Create SQLModel models for NewsSource and NewsArticle in backend/app/models.py with pgvector column
+- [X] T012 Create SQLModel models for Question, Answer, and AnswerSourceArticle (chat history) in backend/app/models.py
+- [X] T013 Create Alembic migration to create news_sources and news_articles tables in backend/app/alembic/versions/
+- [X] T014 Create Alembic migration to create questions, answers, and answer_source_articles tables in backend/app/alembic/versions/
 - [ ] T015 [P] [TEST] Write unit tests for NewsSource CRUD operations in backend/tests/unit/test_crud_news_source.py (test create, get_active, update_ingestion_status)
 - [ ] T016 [P] Add CRUD operations for NewsSource in backend/app/crud.py (create, get_active, update_ingestion_status)
 - [ ] T017 [P] [TEST] Write unit tests for NewsArticle CRUD operations in backend/tests/unit/test_crud_news_article.py (test create, get_by_hash, semantic_search, get_recent)
