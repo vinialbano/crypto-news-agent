@@ -115,11 +115,13 @@ async def test_embed_query_async(embeddings_service, mock_ollama_embeddings):
 def test_embeddings_service_connection_error(
     embeddings_service, mock_ollama_embeddings
 ):
+    from app.shared.exceptions import EmbeddingGenerationError
+
     mock_ollama_embeddings.embed_query.side_effect = ConnectionError(
         "Ollama service unavailable"
     )
 
-    with pytest.raises(ConnectionError, match="Ollama service unavailable"):
+    with pytest.raises(EmbeddingGenerationError, match="Failed to generate embedding"):
         embeddings_service.embed_query("What is Bitcoin?")
 
 

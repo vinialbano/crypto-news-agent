@@ -37,12 +37,12 @@ def run_scheduled_ingestion() -> None:
             logger.error(f"Scheduled ingestion failed: {e}", exc_info=True)
 
 
-def run_scheduled_cleanup(days: int = 30) -> None:
+def run_scheduled_cleanup() -> None:
     """Run article cleanup as a scheduled job."""
     with Session(engine) as session:
         try:
             service = create_ingestion_service(session)
-            deleted_count = service.cleanup_old_articles(days=days)
+            deleted_count = service.cleanup_old_articles()
             session.commit()
             logger.info(f"Scheduled cleanup completed: {deleted_count} articles deleted")
         except Exception as e:
@@ -76,7 +76,7 @@ def schedule_article_cleanup() -> None:
     """Schedule daily article cleanup job."""
     # Run daily at 2 AM UTC
     scheduler.add_job(
-        lambda: run_scheduled_cleanup(days=30),
+        run_scheduled_cleanup,
         trigger=CronTrigger(hour=2, minute=0),
         id="article_cleanup",
         name="Article Cleanup",

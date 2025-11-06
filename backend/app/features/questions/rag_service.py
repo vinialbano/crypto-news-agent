@@ -6,18 +6,12 @@ from collections.abc import AsyncIterator
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
 
+from app.core.config import settings
 from app.features.news.repository import NewsRepository
 from app.shared.embeddings import EmbeddingsService
+from app.shared.exceptions import InsufficientContextError, RAGError
 
 logger = logging.getLogger(__name__)
-
-# Semantic search distance threshold (cosine distance)
-# Higher values = less strict (more results)
-# Lower values = more strict (fewer, more relevant results)
-DISTANCE_THRESHOLD = 0.5
-
-# Number of articles to retrieve for context
-TOP_K_ARTICLES = 5
 
 
 class RAGService:
@@ -73,19 +67,16 @@ Answer:"""
             # Step 2: Semantic search for relevant articles using injected repository
             results = self.repository.semantic_search(
                 query_embedding=query_embedding,
-                limit=TOP_K_ARTICLES,
+                limit=settings.RAG_TOP_K_ARTICLES,
             )
 
             # Step 3: Check if we have relevant articles
-            if not results or results[0][1] > DISTANCE_THRESHOLD:
-                logger.warning(
-                    f"No relevant articles found (distance: {results[0][1] if results else 'N/A'})"
+            if not results or results[0][1] > settings.RAG_DISTANCE_THRESHOLD:
+                distance = results[0][1] if results else None
+                logger.warning(f"No relevant articles found (distance: {distance})")
+                raise InsufficientContextError(
+                    "No relevant articles found for the given question"
                 )
-                yield {
-                    "type": "error",
-                    "content": "I don't have enough information about that topic in recent news.",
-                }
-                return
 
             # Step 4: Build context from retrieved articles
             articles, distances = zip(*results, strict=False)
@@ -119,9 +110,15 @@ Answer:"""
             # Step 6: Signal completion
             yield {"type": "done"}
 
+        except InsufficientContextError as e:
+            logger.warning(f"Insufficient context: {e}")
+            yield {
+                "type": "error",
+                "content": "I don't have enough information about that topic in recent news.",
+            }
         except Exception as e:
             logger.error(f"Error streaming answer: {e}", exc_info=True)
-            yield {"type": "error", "content": f"An error occurred: {str(e)}"}
+            raise RAGError(f"Failed to generate answer: {e}") from e
 
     def _build_context(self, articles) -> str:
         """Build context string from retrieved articles."""
@@ -131,7 +128,7 @@ Answer:"""
             context_parts.append(
                 f"Article {idx} (Source: {article.source_name}):\n"
                 f"Title: {article.title}\n"
-                f"Content: {article.content[:500]}...\n"  # Limit content length
+                f"Content: {article.content[:settings.RAG_CONTEXT_PREVIEW_LENGTH]}...\n"
             )
 
         return "\n\n".join(context_parts)

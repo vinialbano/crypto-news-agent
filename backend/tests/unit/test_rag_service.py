@@ -164,19 +164,17 @@ class TestRAGService:
     @pytest.mark.asyncio
     async def test_stream_answer_exception_handling(self, rag_service):
         """Test answer streaming handles exceptions."""
+        import pytest
+        from app.shared.exceptions import RAGError
+
         # Setup mocks to raise exception
         rag_service.repository.semantic_search.side_effect = Exception("Database error")
 
-        # Stream answer
+        # Stream answer should raise RAGError
         question = "What is happening?"
-        messages = []
-        async for message in rag_service.stream_answer(question):
-            messages.append(message)
-
-        # Assertions
-        assert len(messages) == 1
-        assert messages[0]["type"] == "error"
-        assert "error" in messages[0]["content"].lower()
+        with pytest.raises(RAGError, match="Failed to generate answer"):
+            async for message in rag_service.stream_answer(question):
+                pass
 
     def test_build_context(self, rag_service, sample_articles):
         """Test context building from articles."""

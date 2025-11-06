@@ -4,6 +4,8 @@ import logging
 
 from langchain_ollama import OllamaEmbeddings
 
+from app.shared.exceptions import EmbeddingGenerationError
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,7 +28,9 @@ class EmbeddingsService:
             return embedding
         except Exception as e:
             logger.error(f"Failed to generate embedding for query: {e}")
-            raise
+            raise EmbeddingGenerationError(
+                f"Failed to generate embedding for query: {e}"
+            ) from e
 
     def embed_documents(self, documents: list[str]) -> list[list[float]]:
         """Generate embeddings for multiple documents."""
@@ -39,7 +43,9 @@ class EmbeddingsService:
             return embeddings
         except Exception as e:
             logger.error(f"Failed to generate embeddings for documents: {e}")
-            raise
+            raise EmbeddingGenerationError(
+                f"Failed to generate embeddings for {len(documents)} documents: {e}"
+            ) from e
 
     async def aembed_query(self, query: str) -> list[float]:
         """Async version of embed_query."""
@@ -52,7 +58,9 @@ class EmbeddingsService:
             return embedding
         except Exception as e:
             logger.error(f"Failed to generate embedding for query (async): {e}")
-            raise
+            raise EmbeddingGenerationError(
+                f"Failed to generate embedding for query (async): {e}"
+            ) from e
 
     async def aembed_documents(self, documents: list[str]) -> list[list[float]]:
         """Async version of embed_documents."""
@@ -65,4 +73,6 @@ class EmbeddingsService:
             return embeddings
         except Exception as e:
             logger.error(f"Failed to generate embeddings for documents (async): {e}")
-            raise
+            raise EmbeddingGenerationError(
+                f"Failed to generate embeddings for {len(documents)} documents (async): {e}"
+            ) from e

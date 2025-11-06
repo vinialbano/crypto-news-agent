@@ -143,13 +143,15 @@ class TestRSSFetcher:
     def test_fetch_feed_loader_exception(
         self, mock_loader_class, rss_fetcher, mock_news_source
     ):
+        import pytest
+        from app.shared.exceptions import RSSFetchError
+
         mock_loader = MagicMock()
         mock_loader.load.side_effect = Exception("Network error")
         mock_loader_class.return_value = mock_loader
 
-        articles = rss_fetcher.fetch_feed(mock_news_source)
-
-        assert len(articles) == 0
+        with pytest.raises(RSSFetchError, match="Failed to fetch RSS feed"):
+            rss_fetcher.fetch_feed(mock_news_source)
 
     @patch("app.features.news.rss_fetcher.RSSFeedLoader")
     def test_fetch_feed_empty_results(

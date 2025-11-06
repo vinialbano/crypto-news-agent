@@ -77,6 +77,16 @@ class Settings(BaseSettings):
 
     # Ingestion configuration
     INGESTION_INTERVAL_MINUTES: int
+    ARTICLE_CLEANUP_DAYS: int = 30
+
+    # RAG configuration
+    RAG_DISTANCE_THRESHOLD: float = 0.5
+    RAG_TOP_K_ARTICLES: int = 5
+    RAG_CONTEXT_PREVIEW_LENGTH: int = 500
+
+    # WebSocket configuration
+    WEBSOCKET_MAX_QUESTIONS_PER_MINUTE: int = 10
+    WEBSOCKET_CONNECTION_TIMEOUT_SECONDS: int = 300  # 5 minutes
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":

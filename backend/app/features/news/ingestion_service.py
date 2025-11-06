@@ -3,9 +3,11 @@
 import logging
 from datetime import datetime, timedelta
 
+from app.core.config import settings
 from app.features.news.article_processor import ArticleProcessor
 from app.features.news.repository import NewsRepository
 from app.features.news.rss_fetcher import RSSFetcher
+from app.shared.exceptions import RSSFetchError
 
 logger = logging.getLogger(__name__)
 
@@ -107,8 +109,19 @@ class IngestionService:
                     f"{processing_stats['errors']} errors"
                 )
 
+            except RSSFetchError as e:
+                error_msg = f"RSS fetch failed: {e}"
+                logger.error(f"{source_name}: {error_msg}", exc_info=True)
+                total_stats["total_errors"] += 1
+
+                # Update source with error
+                self.repository.update_ingestion_status(
+                    source_id=source_id,
+                    success=False,
+                    error_message=error_msg,
+                )
             except Exception as e:
-                error_msg = f"Failed to ingest from source: {e}"
+                error_msg = f"Unexpected error during ingestion: {e}"
                 logger.error(f"{source_name}: {error_msg}", exc_info=True)
                 total_stats["total_errors"] += 1
 
@@ -132,8 +145,11 @@ class IngestionService:
 
         return total_stats
 
-    def cleanup_old_articles(self, days: int = 30) -> int:
+    def cleanup_old_articles(self, days: int | None = None) -> int:
         """Delete articles older than specified days."""
+        if days is None:
+            days = settings.ARTICLE_CLEANUP_DAYS
+
         logger.info(f"Cleaning up articles older than {days} days")
         cutoff_date = datetime.utcnow() - timedelta(days=days)
 

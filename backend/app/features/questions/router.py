@@ -1,15 +1,49 @@
 """Questions feature API router with WebSocket support."""
 
+import asyncio
 import json
 import logging
+from collections import defaultdict
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from app.core.config import settings
 from app.shared.deps import RAGServiceDep
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Rate limiting: Track question count per client (in-memory)
+# Key: client_id (IP or connection ID), Value: list of timestamps
+_rate_limit_tracker: dict[str, list[datetime]] = defaultdict(list)
+
+
+def _check_rate_limit(client_id: str) -> bool:
+    """Check if client has exceeded rate limit.
+
+    Args:
+        client_id: Unique client identifier
+
+    Returns:
+        True if within rate limit, False if exceeded
+    """
+    now = datetime.utcnow()
+    cutoff = now - timedelta(minutes=1)
+
+    # Clean up old timestamps
+    _rate_limit_tracker[client_id] = [
+        ts for ts in _rate_limit_tracker[client_id] if ts > cutoff
+    ]
+
+    # Check rate limit
+    if len(_rate_limit_tracker[client_id]) >= settings.WEBSOCKET_MAX_QUESTIONS_PER_MINUTE:
+        return False
+
+    # Add current timestamp
+    _rate_limit_tracker[client_id].append(now)
+    return True
 
 
 @router.websocket("/ws/ask")
@@ -31,46 +65,81 @@ async def ask_question_websocket(
        - {"type": "chunk", "content": "surged..."} - More chunks
        - {"type": "done"} - Streaming complete
        - {"type": "error", "content": "message"} - On error
+
+    Security features:
+    - Rate limiting: Max questions per minute per client
+    - Connection timeout: Auto-disconnect after configured timeout
     """
     await websocket.accept()
-    logger.info("WebSocket connection established")
+
+    # Generate client ID from websocket client (use IP if available)
+    client_id = f"{websocket.client.host}:{websocket.client.port}" if websocket.client else id(websocket)
+    logger.info(f"WebSocket connection established: {client_id}")
 
     try:
-        while True:
-            # Receive question from client
-            data = await websocket.receive_text()
-            message = json.loads(data)
-            question = message.get("question", "").strip()
+        # Set connection timeout
+        async with asyncio.timeout(settings.WEBSOCKET_CONNECTION_TIMEOUT_SECONDS):
+            while True:
+                # Receive question from client
+                data = await websocket.receive_text()
+                message = json.loads(data)
+                question = message.get("question", "").strip()
 
-            if not question:
-                await websocket.send_json(
-                    {
-                        "type": "error",
-                        "content": "Question cannot be empty",
-                    }
-                )
-                continue
+                if not question:
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "content": "Question cannot be empty",
+                        }
+                    )
+                    continue
 
-            logger.info(f"Received question via WebSocket: {question[:100]}")
+                # Check rate limit
+                if not _check_rate_limit(client_id):
+                    logger.warning(f"Rate limit exceeded for client: {client_id}")
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "content": "Rate limit exceeded. Please wait before sending more questions.",
+                        }
+                    )
+                    continue
 
-            # Stream answer back to client (repository is already injected in RAG service)
-            async for message_chunk in rag_service.stream_answer(question):
-                await websocket.send_json(message_chunk)
+                logger.info(f"Received question via WebSocket: {question[:100]}")
 
-            logger.info("Answer streaming completed")
+                # Stream answer back to client (repository is already injected in RAG service)
+                async for message_chunk in rag_service.stream_answer(question):
+                    await websocket.send_json(message_chunk)
 
+                logger.info("Answer streaming completed")
+
+    except TimeoutError:
+        logger.warning(f"WebSocket connection timeout for client: {client_id}")
+        try:
+            await websocket.send_json(
+                {
+                    "type": "error",
+                    "content": "Connection timeout. Please reconnect.",
+                }
+            )
+            await websocket.close()
+        except:
+            pass
     except WebSocketDisconnect:
-        logger.info("WebSocket client disconnected")
+        logger.info(f"WebSocket client disconnected: {client_id}")
     except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON received: {e}")
-        await websocket.send_json(
-            {
-                "type": "error",
-                "content": "Invalid message format",
-            }
-        )
+        logger.error(f"Invalid JSON received from {client_id}: {e}")
+        try:
+            await websocket.send_json(
+                {
+                    "type": "error",
+                    "content": "Invalid message format",
+                }
+            )
+        except:
+            pass
     except Exception as e:
-        logger.error(f"WebSocket error: {e}", exc_info=True)
+        logger.error(f"WebSocket error for {client_id}: {e}", exc_info=True)
         try:
             await websocket.send_json(
                 {
@@ -81,3 +150,8 @@ async def ask_question_websocket(
         except:
             # Connection might be closed already
             pass
+    finally:
+        # Clean up rate limit tracker for this client
+        if client_id in _rate_limit_tracker:
+            del _rate_limit_tracker[client_id]
+        logger.info(f"WebSocket connection closed: {client_id}")

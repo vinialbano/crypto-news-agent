@@ -6,6 +6,7 @@ from datetime import datetime
 from app.features.news.models import NewsArticle
 from app.features.news.repository import NewsRepository
 from app.shared.embeddings import EmbeddingsService
+from app.shared.exceptions import ArticleProcessingError, DuplicateArticleError
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ class ArticleProcessor:
 
             if existing:
                 logger.debug(f"Duplicate article found: {title}")
-                return None
+                raise DuplicateArticleError(f"Duplicate article: {title}")
 
             # Generate embedding from title + content
             embedding_text = f"{title}\n\n{content}"
@@ -66,9 +67,14 @@ class ArticleProcessor:
             logger.info(f"Processed article: {title} ({len(content)} chars)")
             return article
 
+        except DuplicateArticleError:
+            # Re-raise duplicate errors as-is
+            raise
         except Exception as e:
             logger.error(f"Error processing article '{title}': {e}")
-            raise
+            raise ArticleProcessingError(
+                f"Failed to process article '{title}': {e}"
+            ) from e
 
     def process_batch(
         self,
@@ -90,9 +96,9 @@ class ArticleProcessor:
 
                 if result:
                     stats["new_articles"] += 1
-                else:
-                    stats["duplicate_articles"] += 1
 
+            except DuplicateArticleError:
+                stats["duplicate_articles"] += 1
             except Exception as e:
                 logger.error(f"Error in batch processing: {e}")
                 stats["errors"] += 1

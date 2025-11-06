@@ -7,6 +7,7 @@ from typing import Any
 from langchain_community.document_loaders import RSSFeedLoader
 
 from app.features.news.models import NewsSource
+from app.shared.exceptions import RSSFetchError
 
 logger = logging.getLogger(__name__)
 
@@ -114,5 +115,8 @@ class RSSFetcher:
             logger.error(
                 f"Failed to fetch/parse RSS feed from {source.name}: {e}", exc_info=True
             )
+            raise RSSFetchError(
+                f"Failed to fetch RSS feed from {source.name}: {e}"
+            ) from e
 
         return articles
