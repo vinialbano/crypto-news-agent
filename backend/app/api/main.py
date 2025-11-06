@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter
 
-from app.features.news.router import router as news_router
-from app.features.questions.router import router as questions_router
+from app.api.routes.news import router as news_router
+from app.api.routes.questions import router as questions_router
 
 api_router = APIRouter()
 

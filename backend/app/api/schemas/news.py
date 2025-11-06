@@ -1,11 +1,11 @@
-"""News feature API schemas (request/response models)."""
+"""News API response schemas (pure Pydantic models for HTTP layer)."""
 
 from datetime import datetime
 
-from sqlmodel import SQLModel
+from pydantic import BaseModel
 
 
-class NewsSourcePublic(SQLModel):
+class NewsSourcePublic(BaseModel):
     """Public schema for news source API responses."""
 
     id: int
@@ -17,8 +17,10 @@ class NewsSourcePublic(SQLModel):
     ingestion_count: int
     created_at: datetime
 
+    model_config = {"from_attributes": True}
 
-class NewsArticlePublic(SQLModel):
+
+class NewsArticlePublic(BaseModel):
     """Public schema for news article API responses."""
 
     id: int
@@ -30,8 +32,10 @@ class NewsArticlePublic(SQLModel):
     content: str  # Full article content for display
     # Note: embedding not exposed in public API
 
+    model_config = {"from_attributes": True}
 
-class NewsListResponse(SQLModel):
+
+class NewsListResponse(BaseModel):
     """Response model for news article list endpoint."""
 
     articles: list[NewsArticlePublic]

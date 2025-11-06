@@ -5,7 +5,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
-from app.features.news.schemas import NewsListResponse
+from app.api.schemas.news import NewsListResponse
 from app.shared.deps import IngestionServiceDep, NewsRepositoryDep, SessionDep
 
 logger = logging.getLogger(__name__)
