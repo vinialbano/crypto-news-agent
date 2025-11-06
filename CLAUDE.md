@@ -176,7 +176,12 @@ PostgreSQL Database
 - `deps.py`: FastAPI dependencies (auth, DB sessions)
 
 **Key Patterns:**
-- **Dependency Injection**: Use FastAPI's `Depends()` for DB sessions, auth
+- **Dependency Injection (CRITICAL)**:
+  - **ALWAYS** use FastAPI's `Depends()` for ALL external services (DB sessions, embeddings, LLM services, etc.)
+  - **NEVER** instantiate services directly in route handlers or other services
+  - **ALL** dependency factory functions MUST be placed in `backend/app/shared/deps.py` to prevent scope pollution
+  - Keeps code clean, testable, and follows single responsibility principle
+  - Example: Use `EmbeddingsServiceDep`, `IngestionServiceDep`, `RAGServiceDep` from `app.shared.deps`
 - **SQLModel**: Models in `app/models.py` serve as both Pydantic schemas and SQLAlchemy tables
 - **CRUD Utilities**: Database operations abstracted in `app/crud.py`
 - **Configuration**: `app/core/config.py` uses Pydantic Settings; reads from `../.env`

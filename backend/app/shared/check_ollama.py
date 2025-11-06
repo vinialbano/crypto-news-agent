@@ -1,7 +1,9 @@
 """Check Ollama service connectivity before starting the application."""
+
 import logging
 import sys
 import time
+
 import requests
 
 from app.core.config import settings
@@ -22,8 +24,7 @@ def check_ollama_connectivity() -> bool:
     try:
         # Try to access the Ollama API
         response = requests.get(
-            f"{settings.OLLAMA_HOST}/api/tags",
-            timeout=TIMEOUT_SECONDS
+            f"{settings.OLLAMA_HOST}/api/tags", timeout=TIMEOUT_SECONDS
         )
         response.raise_for_status()
         logger.info(f"✓ Ollama service is accessible at {settings.OLLAMA_HOST}")
@@ -52,7 +53,7 @@ def main() -> None:
             sys.exit(0)
 
         if attempt < MAX_RETRIES:
-            logger.warning(f"Retrying in 2 seconds...")
+            logger.warning("Retrying in 2 seconds...")
             time.sleep(2)
 
     logger.error(

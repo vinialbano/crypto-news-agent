@@ -1,4 +1,5 @@
 """Shared models used across features."""
+
 from sqlmodel import SQLModel
 
 

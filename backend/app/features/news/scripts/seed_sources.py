@@ -1,5 +1,7 @@
 """Seed and update database with configured news sources."""
+
 import logging
+
 from sqlmodel import Session, select
 
 from app.core.config import settings
@@ -33,7 +35,9 @@ def seed_news_sources() -> None:
     with Session(engine) as session:
         for source_config in sources_config:
             # Check if source exists
-            statement = select(NewsSource).where(NewsSource.name == source_config["name"])
+            statement = select(NewsSource).where(
+                NewsSource.name == source_config["name"]
+            )
             existing_source = session.exec(statement).first()
 
             if existing_source:
@@ -55,7 +59,7 @@ def seed_news_sources() -> None:
                 source = NewsSource(
                     name=source_config["name"],
                     rss_url=source_config["rss_url"],
-                    is_active=True
+                    is_active=True,
                 )
                 session.add(source)
                 session.commit()

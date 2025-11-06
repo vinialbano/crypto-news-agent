@@ -1,4 +1,5 @@
 """News feature database models."""
+
 import hashlib
 from datetime import datetime
 

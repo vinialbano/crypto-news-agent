@@ -11,24 +11,23 @@ dependencies = [
     "pydantic-settings<3.0.0,>=2.2.1",
     "httpx<1.0.0,>=0.25.1",
     "tenacity<9.0.0,>=8.2.3",
-
     # Database
     "alembic<2.0.0,>=1.12.1",
     "psycopg[binary]<4.0.0,>=3.1.13",
     "sqlmodel<1.0.0,>=0.0.21",
     "pgvector>=0.4.1",
-
     # LLM and AI
     "langchain>=1.0.3",
     "langchain-community>=0.4.1",
     "langchain-ollama>=1.0.0",
-
     # News ingestion
     "feedparser>=6.0.12",
     "apscheduler>=3.11.1",
-
     # Monitoring
     "sentry-sdk[fastapi]<2.0.0,>=1.40.6",
+    "newspaper3k>=0.2.8",
+    "python-dateutil>=2.9.0.post0",
+    "lxml-html-clean>=0.4.3",
 ]
 
 [tool.uv]
@@ -38,6 +37,7 @@ dev-dependencies = [
     "ruff<1.0.0,>=0.2.2",
     "pre-commit<4.0.0,>=3.6.2",
     "coverage<8.0.0,>=7.4.3",
+    "pytest-asyncio>=0.23.8",
 ]
 
 [build-system]
@@ -85,3 +85,18 @@ sort = "-Cover"
 
 [tool.coverage.html]
 show_contexts = true
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests (require real services)",
+    "e2e: marks tests as end-to-end tests (full system flow)",
+    "slow: marks tests as slow running (>5 seconds)",
+    "asyncio: marks tests as async tests",
+    "flaky: marks tests as flaky (may fail due to external dependencies)",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --strict-markers --tb=short"
+asyncio_mode = "auto"

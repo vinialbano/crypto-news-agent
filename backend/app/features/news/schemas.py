@@ -1,4 +1,5 @@
 """News feature API schemas (request/response models)."""
+
 from datetime import datetime
 
 from sqlmodel import SQLModel
@@ -26,4 +27,12 @@ class NewsArticlePublic(SQLModel):
     source_name: str
     published_at: datetime | None
     ingested_at: datetime
+    content: str  # Full article content for display
     # Note: embedding not exposed in public API
+
+
+class NewsListResponse(SQLModel):
+    """Response model for news article list endpoint."""
+
+    articles: list[NewsArticlePublic]
+    count: int
