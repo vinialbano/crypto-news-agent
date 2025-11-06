@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 
 from app.features.news.schemas import NewsListResponse
-from app.shared.deps import IngestionServiceDep, NewsRepositoryDep
+from app.shared.deps import IngestionServiceDep, NewsRepositoryDep, SessionDep
 
 logger = logging.getLogger(__name__)
 
@@ -29,16 +29,19 @@ def get_news_articles(
 @router.post("/admin/ingest")
 def trigger_manual_ingestion(
     service: IngestionServiceDep,
+    session: SessionDep,
 ) -> Any:
     """Manually trigger news ingestion."""
     try:
         stats = service.run_ingestion()
+        session.commit()  # Commit all changes from the ingestion
         return {
             "status": "success",
             "message": "News ingestion completed",
             "stats": stats,
         }
     except Exception as e:
+        session.rollback()  # Rollback on error
         logger.error(f"Manual ingestion failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Ingestion failed: {str(e)}"

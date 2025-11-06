@@ -3,9 +3,9 @@
 import logging
 from datetime import datetime
 
-from app.features.embeddings.service import EmbeddingsService
 from app.features.news.models import NewsArticle
 from app.features.news.repository import NewsRepository
+from app.shared.embeddings import EmbeddingsService
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +68,6 @@ class ArticleProcessor:
 
         except Exception as e:
             logger.error(f"Error processing article '{title}': {e}")
-            # Rollback session on error to prevent PendingRollbackError
-            self.repository.session.rollback()
             raise
 
     def process_batch(

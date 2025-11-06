@@ -21,7 +21,7 @@ class NewsRepository:
         """Create a new news source."""
         source = NewsSource(name=name, rss_url=rss_url, is_active=is_active)
         self.session.add(source)
-        self.session.commit()
+        self.session.flush()  # Make ID available without committing
         self.session.refresh(source)
         return source
 
@@ -50,7 +50,7 @@ class NewsRepository:
                 source.last_error = error_message
 
             self.session.add(source)
-            self.session.commit()
+            self.session.flush()  # Make changes visible for subsequent operations
 
     # NewsArticle operations
     def create_news_article(
@@ -77,7 +77,7 @@ class NewsRepository:
         )
 
         self.session.add(article)
-        self.session.commit()
+        self.session.flush()  # Make ID available without committing
         self.session.refresh(article)
         return article
 
@@ -130,6 +130,5 @@ class NewsRepository:
         statement = delete(NewsArticle).where(NewsArticle.ingested_at < cutoff_date)
         result = self.session.exec(statement)
         deleted_count = result.rowcount  # type: ignore
-        self.session.commit()
 
         return deleted_count

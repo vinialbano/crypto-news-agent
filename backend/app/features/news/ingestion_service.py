@@ -112,9 +112,6 @@ class IngestionService:
                 logger.error(f"{source_name}: {error_msg}", exc_info=True)
                 total_stats["total_errors"] += 1
 
-                # Rollback session on error
-                self.repository.session.rollback()
-
                 # Update source with error
                 self.repository.update_ingestion_status(
                     source_id=source_id,

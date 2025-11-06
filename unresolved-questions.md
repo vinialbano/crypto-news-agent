@@ -1,0 +1,2 @@
+- Do we need the async methods in the embeddings class?
+- If we can't rely on the `Depends` utility from FastAPI for the scheduled workers, should we have the standalone methods, or should we just get rid of `Depends` entirely and simplify the DI?

@@ -6,8 +6,8 @@ from collections.abc import AsyncIterator
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
 
-from app.features.embeddings.service import EmbeddingsService
 from app.features.news.repository import NewsRepository
+from app.shared.embeddings import EmbeddingsService
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ Answer:"""
                 return
 
             # Step 4: Build context from retrieved articles
-            articles, distances = zip(*results)
+            articles, distances = zip(*results, strict=False)
             context = self._build_context(articles)
 
             # Send source articles to frontend

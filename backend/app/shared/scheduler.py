@@ -5,8 +5,11 @@ import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
+from sqlmodel import Session
 
 from app.core.config import settings
+from app.core.db import engine
+from app.shared.deps import create_ingestion_service
 
 logger = logging.getLogger(__name__)
 
@@ -21,42 +24,30 @@ scheduler = AsyncIOScheduler()
 
 def run_scheduled_ingestion() -> None:
     """Run news ingestion as a scheduled job."""
-    try:
-        from app.shared.deps import create_ingestion_service, get_db
-
-        # Use dependency injection via the factory
-        db_gen = get_db()
-        session = next(db_gen)
+    with Session(engine) as session:
         try:
-            service = create_ingestion_service()
-            service.run_ingestion()
-        finally:
-            try:
-                db_gen.close()
-            except StopIteration:
-                pass
-    except Exception as e:
-        logger.error(f"Scheduled ingestion failed: {e}", exc_info=True)
+            service = create_ingestion_service(session)
+            stats = service.run_ingestion()
+            session.commit()
+            logger.info(
+                f"Scheduled ingestion completed: {stats['total_new_articles']} new articles"
+            )
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Scheduled ingestion failed: {e}", exc_info=True)
 
 
 def run_scheduled_cleanup(days: int = 30) -> None:
     """Run article cleanup as a scheduled job."""
-    try:
-        from app.shared.deps import create_ingestion_service, get_db
-
-        # Use dependency injection via the factory
-        db_gen = get_db()
-        session = next(db_gen)
+    with Session(engine) as session:
         try:
-            service = create_ingestion_service()
-            service.cleanup_old_articles(days=days)
-        finally:
-            try:
-                db_gen.close()
-            except StopIteration:
-                pass
-    except Exception as e:
-        logger.error(f"Scheduled cleanup failed: {e}", exc_info=True)
+            service = create_ingestion_service(session)
+            deleted_count = service.cleanup_old_articles(days=days)
+            session.commit()
+            logger.info(f"Scheduled cleanup completed: {deleted_count} articles deleted")
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Scheduled cleanup failed: {e}", exc_info=True)
 
 
 # ===========================

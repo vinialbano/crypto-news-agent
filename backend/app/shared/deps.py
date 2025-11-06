@@ -16,12 +16,12 @@ from sqlmodel import Session
 
 from app.core.config import settings
 from app.core.db import engine
-from app.features.embeddings.service import EmbeddingsService
 from app.features.news.article_processor import ArticleProcessor
 from app.features.news.ingestion_service import IngestionService
 from app.features.news.repository import NewsRepository
 from app.features.news.rss_fetcher import RSSFetcher
 from app.features.questions.rag_service import RAGService
+from app.shared.embeddings import EmbeddingsService
 
 # ===========================
 # Core Dependencies
@@ -106,12 +106,10 @@ def get_article_processor_dep(
 
 
 def get_ingestion_service_dep(
-    rss_fetcher: Annotated[RSSFetcher, Depends(get_rss_fetcher_dep)],
-    article_processor: Annotated[ArticleProcessor, Depends(get_article_processor_dep)],
-    repository: NewsRepositoryDep,
+    session: SessionDep,
 ) -> IngestionService:
-    """Get ingestion service dependency."""
-    return IngestionService(rss_fetcher, article_processor, repository)
+    """Get ingestion service dependency for FastAPI routes."""
+    return create_ingestion_service(session)
 
 
 def get_rag_service_dep(
@@ -135,24 +133,27 @@ RAGServiceDep = Annotated[RAGService, Depends(get_rag_service_dep)]
 
 
 # ===========================
-# Standalone Factories (for scheduled jobs, WebSockets, CLI)
-# These use Depends() to automatically resolve dependencies
+# Service Factories (shared construction logic)
+# Used by both FastAPI DI and standalone contexts (schedulers, CLI, tests)
 # ===========================
 
 
-def create_ingestion_service(
-    repository: NewsRepository = Depends(get_news_repository),
-    rss_fetcher: RSSFetcher = Depends(get_rss_fetcher_dep),
-    article_processor: ArticleProcessor = Depends(get_article_processor_dep),
-) -> IngestionService:
-    """Create standalone ingestion service for scheduled jobs and CLI."""
-    return IngestionService(rss_fetcher, article_processor, repository)
+def create_ingestion_service(session: Session) -> IngestionService:
+    """Create ingestion service with all dependencies.
 
+    This is the core construction logic used by both:
+    - FastAPI dependency injection (via get_ingestion_service_dep)
+    - Standalone contexts (schedulers, CLI, tests)
 
-def create_rag_service(
-    embeddings_service: EmbeddingsService = Depends(get_embeddings_service_dep),
-    chat_model: ChatOllama = Depends(get_chat_ollama),
-    repository: NewsRepository = Depends(get_news_repository),
-) -> RAGService:
-    """Create standalone RAG service for WebSockets and CLI."""
-    return RAGService(embeddings_service, chat_model, repository)
+    Args:
+        session: Database session (managed by caller)
+
+    Returns:
+        Fully constructed IngestionService
+    """
+    embeddings = get_ollama_embeddings()
+    embeddings_service = EmbeddingsService(embeddings)
+    rss_fetcher = RSSFetcher()
+    repository = NewsRepository(session)
+    processor = ArticleProcessor(embeddings_service, repository)
+    return IngestionService(rss_fetcher, processor, repository)

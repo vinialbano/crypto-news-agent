@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, Mock
 import numpy as np
 import pytest
 
-from app.features.embeddings.service import EmbeddingsService
+from app.shared.embeddings import EmbeddingsService
 
 
 @pytest.fixture

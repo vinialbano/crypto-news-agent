@@ -8,16 +8,14 @@ import pytest
 from sqlmodel import Session
 
 from app.core.db import engine
-from app.features.embeddings.service import get_embeddings_service
 from app.features.news.models import NewsSource
 from app.features.news.rss_fetcher import RSSFetcher
 
 
 @pytest.fixture(scope="module")
 def rss_fetcher():
-    """Create RSS fetcher instance with real embeddings service."""
-    embeddings_service = get_embeddings_service()
-    return RSSFetcher(embeddings_service)
+    """Create RSS fetcher instance."""
+    return RSSFetcher()
 
 
 @pytest.fixture(scope="module")
