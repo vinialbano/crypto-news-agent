@@ -1,4 +1,4 @@
-"""Database models for Crypto News Agent."""
+"""News feature database models."""
 import hashlib
 from datetime import datetime
 
@@ -6,13 +6,9 @@ from pgvector.sqlalchemy import Vector
 from sqlmodel import Column, Field, SQLModel
 
 
-# Generic message
-class Message(SQLModel):
-    message: str
-
-
-# News Source Model
 class NewsSource(SQLModel, table=True):
+    """News source (RSS feed) model."""
+
     __tablename__ = "news_sources"
 
     id: int | None = Field(default=None, primary_key=True)
@@ -25,8 +21,9 @@ class NewsSource(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-# News Article Model
 class NewsArticle(SQLModel, table=True):
+    """News article with vector embedding for semantic search."""
+
     __tablename__ = "news_articles"
 
     id: int | None = Field(default=None, primary_key=True)
@@ -41,30 +38,6 @@ class NewsArticle(SQLModel, table=True):
 
     @classmethod
     def compute_content_hash(cls, title: str, url: str) -> str:
-        """Compute SHA-256 hash of title + URL for duplicate detection"""
+        """Compute SHA-256 hash of title + URL for duplicate detection."""
         content = f"{title}|{url}"
         return hashlib.sha256(content.encode()).hexdigest()
-
-
-# Public schemas for API responses
-class NewsSourcePublic(SQLModel):
-    id: int
-    name: str
-    rss_url: str
-    is_active: bool
-    last_ingestion_at: datetime | None
-    last_error: str | None
-    ingestion_count: int
-    created_at: datetime
-
-
-class NewsArticlePublic(SQLModel):
-    id: int
-    title: str
-    url: str
-    source_name: str
-    published_at: datetime | None
-    ingested_at: datetime
-    # Note: embedding not exposed in public API
-
-

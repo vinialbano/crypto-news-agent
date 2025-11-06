@@ -5,15 +5,17 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from app.core.db import engine, init_db
+from app.core.db import engine
 from app.main import app
 
 
 @pytest.fixture(scope="session", autouse=True)
 def db() -> Generator[Session, None, None]:
-    """Initialize database for tests."""
+    """Initialize database for tests.
+
+    Database schema is created with Alembic migrations.
+    """
     with Session(engine) as session:
-        init_db(session)
         yield session
         # Cleanup handled by test database
 

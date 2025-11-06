@@ -4,8 +4,8 @@ from sqlmodel import Session, create_engine, SQLModel
 from sqlmodel.pool import StaticPool
 from datetime import datetime
 
-from app.models import NewsSource
-from app import crud
+from app.features.news.models import NewsSource
+from app.features.news import repository as crud
 
 
 @pytest.fixture(name="session")

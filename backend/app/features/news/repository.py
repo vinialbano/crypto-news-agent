@@ -1,12 +1,12 @@
-"""CRUD operations for database models."""
+"""News feature database operations (repository pattern)."""
 from datetime import datetime
 
 from sqlmodel import Session, select, col
 
-from app.models import NewsSource, NewsArticle
+from app.features.news.models import NewsSource, NewsArticle
 
 
-# NewsSource CRUD Operations
+# NewsSource repository functions
 def create_news_source(
     *, session: Session, name: str, rss_url: str, is_active: bool = True
 ) -> NewsSource:
@@ -47,7 +47,7 @@ def update_ingestion_status(
         session.commit()
 
 
-# NewsArticle CRUD Operations
+# NewsArticle repository functions
 def create_news_article(
     *,
     session: Session,

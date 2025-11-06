@@ -18,8 +18,13 @@ fileConfig(config.config_file_name)
 # target_metadata = mymodel.Base.metadata
 # target_metadata = None
 
-from app.models import SQLModel  # noqa
-from app.core.config import settings # noqa
+from sqlmodel import SQLModel  # noqa
+
+from app.core.config import settings  # noqa
+
+# Import all models so Alembic can detect them for autogenerate
+from app.features.news.models import NewsArticle, NewsSource  # noqa
+from app.shared.models import Message  # noqa
 
 target_metadata = SQLModel.metadata
 

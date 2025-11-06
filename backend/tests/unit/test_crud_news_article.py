@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 from pgvector.sqlalchemy import Vector
 import numpy as np
 
-from app.models import NewsArticle
-from app import crud
+from app.features.news.models import NewsArticle
+from app.features.news import repository as crud
 
 
 @pytest.fixture(name="session")

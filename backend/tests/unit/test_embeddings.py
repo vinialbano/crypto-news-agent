@@ -3,7 +3,7 @@ import pytest
 from unittest.mock import Mock, AsyncMock, patch
 import numpy as np
 
-from app.services.embeddings import EmbeddingsService
+from app.features.embeddings.service import EmbeddingsService
 
 
 @pytest.fixture
@@ -123,7 +123,7 @@ def test_embeddings_service_initialization():
     from langchain_ollama import OllamaEmbeddings
 
     # Test that create_embeddings_service factory works
-    from app.services.embeddings import create_embeddings_service
+    from app.features.embeddings.service import create_embeddings_service
 
     service = create_embeddings_service(
         base_url="http://localhost:11434",

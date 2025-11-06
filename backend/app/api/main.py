@@ -1,12 +1,11 @@
-"""Main API router."""
+"""Main API router - registers all feature routers."""
 from fastapi import APIRouter
-
-from app.core.config import settings
 
 api_router = APIRouter()
 
-# API routes will be added as they are implemented
-# Examples:
-# from app.api.routes import news, questions
-# api_router.include_router(news.router)
-# api_router.include_router(questions.router)
+# Feature routers will be added here as they are implemented in Phase 3+
+# Example:
+# from app.features.news.router import router as news_router
+# from app.features.questions.router import router as questions_router
+# api_router.include_router(news_router, prefix="/news", tags=["news"])
+# api_router.include_router(questions_router, prefix="/questions", tags=["questions"])

@@ -4,7 +4,7 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.db import engine
-from app.models import NewsSource
+from app.features.news.models import NewsSource
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

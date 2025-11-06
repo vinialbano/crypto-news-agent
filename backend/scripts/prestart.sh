@@ -8,13 +8,10 @@ python app/backend_pre_start.py
 
 # Check Ollama connectivity (temporarily disabled while cleaning up)
 # echo "Checking Ollama connectivity..."
-# python app/check_ollama.py
+# python -m app.shared.check_ollama
 
 # Run migrations
 alembic upgrade head
 
-# Create initial data in DB
-# python app/initial_data.py
-
 # Seed news sources (temporarily disabled)
-# python -m app.scripts.seed_sources
+# python -m app.features.news.scripts.seed_sources
