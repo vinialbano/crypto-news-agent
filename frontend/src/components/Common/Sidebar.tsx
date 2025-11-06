@@ -1,95 +1,58 @@
-import { Box, Flex, IconButton, Text } from "@chakra-ui/react"
-import { useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { FaBars } from "react-icons/fa"
-import { FiLogOut } from "react-icons/fi"
+import { X } from "lucide-react"
 
-import type { UserPublic } from "@/client"
-import useAuth from "@/hooks/useAuth"
 import {
-  DrawerBackdrop,
-  DrawerBody,
-  DrawerCloseTrigger,
+  Drawer,
+  DrawerClose,
   DrawerContent,
-  DrawerRoot,
   DrawerTrigger,
 } from "../ui/drawer"
 import SidebarItems from "./SidebarItems"
+import { Button } from "../ui/button"
 
 const Sidebar = () => {
-  const queryClient = useQueryClient()
-  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
-  const { logout } = useAuth()
   const [open, setOpen] = useState(false)
 
   return (
     <>
       {/* Mobile */}
-      <DrawerRoot
-        placement="start"
-        open={open}
-        onOpenChange={(e) => setOpen(e.open)}
-      >
-        <DrawerBackdrop />
+      <Drawer open={open} onOpenChange={setOpen} direction="left">
         <DrawerTrigger asChild>
-          <IconButton
+          <Button
             variant="ghost"
-            color="inherit"
-            display={{ base: "flex", md: "none" }}
+            size="icon"
+            className="absolute z-[100] m-4 md:hidden"
             aria-label="Open Menu"
-            position="absolute"
-            zIndex="100"
-            m={4}
           >
             <FaBars />
-          </IconButton>
+          </Button>
         </DrawerTrigger>
-        <DrawerContent maxW="xs">
-          <DrawerCloseTrigger />
-          <DrawerBody>
-            <Flex flexDir="column" justify="space-between">
-              <Box>
-                <SidebarItems onClose={() => setOpen(false)} />
-                <Flex
-                  as="button"
-                  onClick={() => {
-                    logout()
-                  }}
-                  alignItems="center"
-                  gap={4}
-                  px={4}
-                  py={2}
-                >
-                  <FiLogOut />
-                  <Text>Log Out</Text>
-                </Flex>
-              </Box>
-              {currentUser?.email && (
-                <Text fontSize="sm" p={2} truncate maxW="sm">
-                  Logged in as: {currentUser.email}
-                </Text>
-              )}
-            </Flex>
-          </DrawerBody>
-          <DrawerCloseTrigger />
+        <DrawerContent className="fixed inset-y-0 left-0 mt-0 h-full w-[320px] rounded-none">
+          <div className="relative h-full overflow-y-auto">
+            <DrawerClose asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-4 top-4"
+                aria-label="Close Menu"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DrawerClose>
+            <div className="p-4 pt-12">
+              <SidebarItems onClose={() => setOpen(false)} />
+            </div>
+          </div>
         </DrawerContent>
-      </DrawerRoot>
+      </Drawer>
 
       {/* Desktop */}
-
-      <Box
-        display={{ base: "none", md: "flex" }}
-        position="sticky"
-        bg="bg.subtle"
-        top={0}
-        minW="xs"
-        h="100vh"
-        p={4}
-      >
-        <Box w="100%">
+      <div className="sticky top-0 hidden h-screen min-w-[320px] bg-gray-50 p-4 dark:bg-gray-900 md:flex">
+        <div className="w-full">
           <SidebarItems />
-        </Box>
-      </Box>
+        </div>
+      </div>
     </>
   )
 }

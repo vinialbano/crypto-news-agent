@@ -5,7 +5,8 @@
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
       "mcp__shadcn__get_add_command_for_items",
-      "Bash(uv run pytest:*)"
+      "Bash(uv run pytest:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []
