@@ -1,8 +1,9 @@
 import { Link as RouterLink } from "@tanstack/react-router"
-import { FiHome, FiFileText } from "react-icons/fi"
+import { FiHome, FiFileText, FiMessageSquare } from "react-icons/fi"
 
 const items = [
   { icon: FiHome, title: "Home", path: "/" },
+  { icon: FiMessageSquare, title: "Chat", path: "/chat" },
   { icon: FiFileText, title: "News", path: "/news" },
 ]
 

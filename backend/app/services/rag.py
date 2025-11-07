@@ -7,9 +7,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
 
 from app.core.config import settings
-from app.services.news_repository import NewsRepository
-from app.services.embeddings import EmbeddingsService
 from app.exceptions import InsufficientContextError, RAGError
+from app.services.embeddings import EmbeddingsService
+from app.services.news_repository import NewsRepository
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +40,9 @@ User question: {question}
 Instructions:
 - Provide a concise, accurate answer based ONLY on the information in the provided articles
 - If the articles don't contain enough information, say "I don't have enough information about that topic in recent news"
-- Cite specific articles when possible (e.g., "According to DL News...")
+- Cite specific articles when possible using their article ID (e.g., "According to article 1 from DL News...")
 - Be objective and factual
+- Reference specific articles using <article id="X"> when citing information
 
 Answer:"""
         )
@@ -103,6 +104,8 @@ Answer:"""
                 context=context, question=question
             )
 
+            print(formatted_prompt)
+
             async for chunk in self.chat_model.astream(formatted_prompt):
                 if hasattr(chunk, "content") and chunk.content:
                     yield {"type": "chunk", "content": chunk.content}
@@ -121,14 +124,21 @@ Answer:"""
             raise RAGError(f"Failed to generate answer: {e}") from e
 
     def _build_context(self, articles) -> str:
-        """Build context string from retrieved articles."""
+        """Build context string from retrieved articles using XML-like tags."""
         context_parts = []
 
         for idx, article in enumerate(articles, 1):
+            # Format with XML-like tags for better LLM parsing
+            published_date = (
+                article.published_at.isoformat() if article.published_at else "Unknown"
+            )
             context_parts.append(
-                f"Article {idx} (Source: {article.source_name}):\n"
-                f"Title: {article.title}\n"
-                f"Content: {article.content[:settings.RAG_CONTEXT_PREVIEW_LENGTH]}...\n"
+                f'<article id="{idx}">\n'
+                f"  <title>{article.title}</title>\n"
+                f"  <source>{article.source_name}</source>\n"
+                f"  <published>{published_date}</published>\n"
+                f"  <content>\n{article.content}\n  </content>\n"
+                f"</article>"
             )
 
         return "\n\n".join(context_parts)

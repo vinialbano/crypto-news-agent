@@ -293,3 +293,9 @@ async def ask_question_websocket(
         if client_id in _rate_limit_tracker:
             del _rate_limit_tracker[client_id]
         logger.info(f"WebSocket connection closed: {client_id}")
+
+
+@router.get("/health-check/", tags=["health"])
+async def health_check() -> dict[str, str]:
+    """Health check endpoint for Docker healthcheck."""
+    return {"status": "healthy"}

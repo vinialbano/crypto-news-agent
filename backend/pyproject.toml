@@ -2,7 +2,7 @@
 name = "app"
 version = "0.1.0"
 description = ""
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.11,<4.0"
 dependencies = [
     # FastAPI and web framework
     "fastapi[standard]<1.0.0,>=0.114.2",
@@ -49,7 +49,7 @@ strict = true
 exclude = ["venv", ".venv", "alembic"]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 exclude = ["alembic"]
 
 [tool.ruff.lint]

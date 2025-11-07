@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
+import { Route as LayoutNewsRouteImport } from './routes/_layout/news'
+import { Route as LayoutChatRouteImport } from './routes/_layout/chat'
 
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
@@ -21,24 +23,40 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutNewsRoute = LayoutNewsRouteImport.update({
+  id: '/news',
+  path: '/news',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutChatRoute = LayoutChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => LayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
+  '/chat': typeof LayoutChatRoute
+  '/news': typeof LayoutNewsRoute
   '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesByTo {
+  '/chat': typeof LayoutChatRoute
+  '/news': typeof LayoutNewsRoute
   '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
+  '/_layout/chat': typeof LayoutChatRoute
+  '/_layout/news': typeof LayoutNewsRoute
   '/_layout/': typeof LayoutIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/chat' | '/news' | '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/_layout' | '/_layout/'
+  to: '/chat' | '/news' | '/'
+  id: '__root__' | '/_layout' | '/_layout/chat' | '/_layout/news' | '/_layout/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -61,14 +79,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/news': {
+      id: '/_layout/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof LayoutNewsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/chat': {
+      id: '/_layout/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof LayoutChatRouteImport
+      parentRoute: typeof LayoutRoute
+    }
   }
 }
 
 interface LayoutRouteChildren {
+  LayoutChatRoute: typeof LayoutChatRoute
+  LayoutNewsRoute: typeof LayoutNewsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
+  LayoutChatRoute: LayoutChatRoute,
+  LayoutNewsRoute: LayoutNewsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
 }
 

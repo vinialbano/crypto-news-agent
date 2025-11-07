@@ -5,14 +5,12 @@ import {
 import { createRouter, RouterProvider } from "@tanstack/react-router"
 import { StrictMode } from "react"
 import ReactDOM from "react-dom/client"
-import { client } from "./client/client.gen"
+import { OpenAPI } from "./client"
 import { CustomProvider } from "./components/ui/provider"
 import { routeTree } from "./routeTree.gen"
 import "./index.css"
 
-client.setConfig({
-  baseURL: import.meta.env.VITE_API_URL,
-})
+OpenAPI.BASE = import.meta.env.VITE_API_URL || ''
 
 const queryClient = new QueryClient()
 

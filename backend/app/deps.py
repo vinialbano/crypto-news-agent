@@ -64,6 +64,11 @@ def get_chat_ollama() -> ChatOllama:
             base_url=settings.OLLAMA_HOST,
             model=settings.OLLAMA_CHAT_MODEL,
             temperature=0,  # Deterministic responses
+            # Performance optimizations
+            num_ctx=8192,  # Context window (sufficient for 3 articles)
+            num_predict=512,  # Max tokens to generate
+            num_thread=8,  # CPU threads for parallel processing
+            num_gpu=1,  # GPU acceleration if available
         )
     return _chat_ollama
 
