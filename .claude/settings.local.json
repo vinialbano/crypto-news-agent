@@ -14,7 +14,9 @@
       "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
       "Bash(uv sync)",
       "Bash(docker compose build:*)",
-      "Bash(bash scripts/test-unit.sh:*)"
+      "Bash(bash scripts/test-unit.sh:*)",
+      "Bash(source .venv/bin/activate)",
+      "Bash(python -m pytest:*)"
     ],
     "deny": [],
     "ask": []

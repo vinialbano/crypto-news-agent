@@ -1,10 +1,11 @@
 """News ingestion service with scheduling support."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from app.core.config import settings
 from app.features.news.article_processor import ArticleProcessor
+from app.features.news.models import NewsSource
 from app.features.news.repository import NewsRepository
 from app.features.news.rss_fetcher import RSSFetcher
 from app.shared.exceptions import RSSFetchError
@@ -29,16 +30,143 @@ class IngestionService:
         self.article_processor = article_processor
         self.repository = repository
 
-    def run_ingestion(self) -> dict:
-        """Run news ingestion for all active sources.
+    def ingest_source(self, source: "NewsSource | int") -> dict:
+        """Ingest articles from a single news source.
 
-        Fetches articles from RSS feeds and processes them (generates embeddings + persists).
+        Args:
+            source: NewsSource object or source ID
 
         Returns:
-            Dictionary with ingestion statistics
+            Dictionary with detailed ingestion statistics: {
+                "source_name": str,
+                "source_id": int,
+                "new_articles": int,
+                "duplicates": int,
+                "errors": int,
+                "duration_seconds": float,
+                "success": bool,
+                "error_message": str | None,
+            }
+
+        Raises:
+            ValueError: If source ID is provided but not found
         """
-        logger.info("Starting news ingestion")
-        start_time = datetime.utcnow()
+        # If source is ID, fetch from repository
+        if isinstance(source, int):
+            source_obj = self.repository.get_source_by_id(source)
+            if source_obj is None:
+                raise ValueError(f"Source with ID {source} not found")
+            source = source_obj
+
+        # Store source info to avoid lazy-loading issues
+        source_name = source.name
+        source_id = source.id
+
+        logger.info(f"Starting ingestion for source: {source_name} (ID: {source_id})")
+        start_time = datetime.now(UTC)
+
+        result = {
+            "source_name": source_name,
+            "source_id": source_id,
+            "new_articles": 0,
+            "duplicates": 0,
+            "errors": 0,
+            "duration_seconds": 0.0,
+            "success": False,
+            "error_message": None,
+        }
+
+        try:
+            # Step 1: Fetch and parse articles from RSS feed
+            articles = self.rss_fetcher.fetch_feed(source)
+
+            if not articles:
+                logger.warning(f"No articles fetched from {source_name}")
+                # Update source ingestion status
+                self.repository.update_ingestion_status(
+                    source_id=source_id,
+                    success=True,
+                    error_message=None,
+                )
+                result["success"] = True
+                result["duration_seconds"] = (
+                    datetime.now(UTC) - start_time
+                ).total_seconds()
+                logger.info(f"Completed {source_name}: No new articles")
+                return result
+
+            # Step 2: Process articles (check duplicates, generate embeddings, persist)
+            processing_stats = self.article_processor.process_batch(
+                articles=articles,
+                source_name=source_name,
+            )
+
+            # Update result with processing stats
+            result["new_articles"] = processing_stats["new_articles"]
+            result["duplicates"] = processing_stats["duplicate_articles"]
+            result["errors"] = processing_stats["errors"]
+
+            # Update source ingestion status
+            self.repository.update_ingestion_status(
+                source_id=source_id,
+                success=True,
+                error_message=None,
+            )
+
+            result["success"] = True
+            logger.info(
+                f"Completed {source_name}: "
+                f"{result['new_articles']} new, "
+                f"{result['duplicates']} duplicates, "
+                f"{result['errors']} errors"
+            )
+
+        except RSSFetchError as e:
+            error_msg = f"RSS fetch failed: {e}"
+            logger.error(f"{source_name}: {error_msg}", exc_info=True)
+            result["errors"] += 1
+            result["error_message"] = error_msg
+
+            # Update source with error
+            self.repository.update_ingestion_status(
+                source_id=source_id,
+                success=False,
+                error_message=error_msg,
+            )
+
+        except Exception as e:
+            error_msg = f"Unexpected error during ingestion: {e}"
+            logger.error(f"{source_name}: {error_msg}", exc_info=True)
+            result["errors"] += 1
+            result["error_message"] = error_msg
+
+            # Update source with error
+            self.repository.update_ingestion_status(
+                source_id=source_id,
+                success=False,
+                error_message=error_msg,
+            )
+
+        result["duration_seconds"] = (datetime.now(UTC) - start_time).total_seconds()
+        return result
+
+    def ingest_all_sources(self) -> dict:
+        """Ingest articles from all active sources sequentially.
+
+        Returns:
+            Dictionary with aggregate statistics: {
+                "sources_processed": int,
+                "sources_succeeded": int,
+                "sources_failed": int,
+                "total_new_articles": int,
+                "total_duplicates": int,
+                "total_errors": int,
+                "duration_seconds": float,
+                "source_results": list[dict],
+            }
+        """
+        logger.info("Starting news ingestion for all active sources")
+        start_time = datetime.now(UTC)
 
         # Get all active sources
         sources = self.repository.get_active_news_sources()
@@ -47,16 +175,22 @@ class IngestionService:
             logger.warning("No active news sources found")
             return {
                 "sources_processed": 0,
+                "sources_succeeded": 0,
+                "sources_failed": 0,
                 "total_new_articles": 0,
                 "total_duplicates": 0,
                 "total_errors": 0,
-                "duration_seconds": 0,
+                "duration_seconds": 0.0,
+                "source_results": [],
             }
 
         logger.info(f"Processing {len(sources)} active news sources")
 
+        source_results = []
         total_stats = {
             "sources_processed": len(sources),
+            "sources_succeeded": 0,
+            "sources_failed": 0,
             "total_new_articles": 0,
             "total_duplicates": 0,
             "total_errors": 0,
@@ -64,80 +198,27 @@ class IngestionService:
 
         # Process each source
         for source in sources:
-            # Store source info to avoid lazy-loading issues after rollback
-            source_name = source.name
-            source_id = source.id
+            result = self.ingest_source(source)
+            source_results.append(result)
 
-            try:
-                # Step 1: Fetch and parse articles from RSS feed
-                articles = self.rss_fetcher.fetch_feed(source)
+            # Aggregate statistics
+            total_stats["total_new_articles"] += result["new_articles"]
+            total_stats["total_duplicates"] += result["duplicates"]
+            total_stats["total_errors"] += result["errors"]
 
-                if not articles:
-                    logger.warning(f"No articles fetched from {source_name}")
-                    # Update source ingestion status
-                    self.repository.update_ingestion_status(
-                        source_id=source_id,
-                        success=True,
-                        error_message=None,
-                    )
-                    continue
+            if result["success"]:
+                total_stats["sources_succeeded"] += 1
+            else:
+                total_stats["sources_failed"] += 1
 
-                # Step 2: Process articles (check duplicates, generate embeddings, persist)
-                processing_stats = self.article_processor.process_batch(
-                    articles=articles,
-                    source_name=source_name,
-                )
-
-                # Aggregate statistics
-                total_stats["total_new_articles"] += processing_stats["new_articles"]
-                total_stats["total_duplicates"] += processing_stats[
-                    "duplicate_articles"
-                ]
-                total_stats["total_errors"] += processing_stats["errors"]
-
-                # Update source ingestion status
-                self.repository.update_ingestion_status(
-                    source_id=source_id,
-                    success=True,
-                    error_message=None,
-                )
-
-                logger.info(
-                    f"Completed {source_name}: "
-                    f"{processing_stats['new_articles']} new, "
-                    f"{processing_stats['duplicate_articles']} duplicates, "
-                    f"{processing_stats['errors']} errors"
-                )
-
-            except RSSFetchError as e:
-                error_msg = f"RSS fetch failed: {e}"
-                logger.error(f"{source_name}: {error_msg}", exc_info=True)
-                total_stats["total_errors"] += 1
-
-                # Update source with error
-                self.repository.update_ingestion_status(
-                    source_id=source_id,
-                    success=False,
-                    error_message=error_msg,
-                )
-            except Exception as e:
-                error_msg = f"Unexpected error during ingestion: {e}"
-                logger.error(f"{source_name}: {error_msg}", exc_info=True)
-                total_stats["total_errors"] += 1
-
-                # Update source with error
-                self.repository.update_ingestion_status(
-                    source_id=source_id,
-                    success=False,
-                    error_message=error_msg,
-                )
-
-        duration = (datetime.utcnow() - start_time).total_seconds()
+        duration = (datetime.now(UTC) - start_time).total_seconds()
         total_stats["duration_seconds"] = duration
+        total_stats["source_results"] = source_results
 
         logger.info(
             f"Ingestion completed in {duration:.2f}s: "
-            f"{total_stats['sources_processed']} sources, "
+            f"{total_stats['sources_processed']} sources "
+            f"({total_stats['sources_succeeded']} succeeded, {total_stats['sources_failed']} failed), "
             f"{total_stats['total_new_articles']} new articles, "
             f"{total_stats['total_duplicates']} duplicates, "
             f"{total_stats['total_errors']} errors"
@@ -151,7 +232,7 @@ class IngestionService:
             days = settings.ARTICLE_CLEANUP_DAYS
 
         logger.info(f"Cleaning up articles older than {days} days")
-        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        cutoff_date = datetime.now(UTC) - timedelta(days=days)
 
         deleted_count = self.repository.delete_old_articles(cutoff_date)
 

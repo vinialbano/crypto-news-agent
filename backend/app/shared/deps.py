@@ -21,6 +21,7 @@ from app.features.news.ingestion_service import IngestionService
 from app.features.news.repository import NewsRepository
 from app.features.news.rss_fetcher import RSSFetcher
 from app.features.questions.rag_service import RAGService
+from app.shared.content_moderation import ContentModerationService
 from app.shared.embeddings import EmbeddingsService
 
 # ===========================
@@ -121,6 +122,11 @@ def get_rag_service_dep(
     return RAGService(embeddings_service, chat_model, repository)
 
 
+def get_content_moderation_dep() -> ContentModerationService:
+    """Get content moderation service dependency."""
+    return ContentModerationService()
+
+
 # ===========================
 # Type Annotations for FastAPI
 # ===========================
@@ -130,6 +136,9 @@ RSSFetcherDep = Annotated[RSSFetcher, Depends(get_rss_fetcher_dep)]
 ArticleProcessorDep = Annotated[ArticleProcessor, Depends(get_article_processor_dep)]
 IngestionServiceDep = Annotated[IngestionService, Depends(get_ingestion_service_dep)]
 RAGServiceDep = Annotated[RAGService, Depends(get_rag_service_dep)]
+ContentModerationDep = Annotated[
+    ContentModerationService, Depends(get_content_moderation_dep)
+]
 
 
 # ===========================

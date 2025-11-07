@@ -68,3 +68,9 @@ class InsufficientContextError(QuestionsFeatureError):
     """Raised when insufficient context is available to answer a question."""
 
     pass
+
+
+class InvalidQuestionError(QuestionsFeatureError):
+    """Raised when a question violates content moderation rules."""
+
+    pass

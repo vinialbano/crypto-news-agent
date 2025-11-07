@@ -21,6 +21,15 @@ def db_session():
         yield session
 
 
+@pytest.fixture(scope="module", autouse=True)
+def seed_news_sources_fixture():
+    """Seed news sources for all API news tests."""
+    from scripts.seed_sources import seed_news_sources
+
+    # Seed sources (uses its own session)
+    seed_news_sources()
+
+
 @pytest.mark.integration
 def test_get_news_articles_success(client):
     """Test GET /api/v1/news/ returns articles."""
@@ -107,8 +116,8 @@ def test_get_news_sources_shows_active_sources(client, db_session):
 
 @pytest.mark.integration
 @pytest.mark.slow
-def test_post_admin_ingest_success(client):
-    """Test POST /api/v1/news/admin/ingest triggers ingestion.
+def test_post_admin_ingest_all_sources_success(client):
+    """Test POST /api/v1/news/admin/ingest triggers ingestion for all sources.
 
     Note: This test is marked as slow because it actually fetches RSS feeds.
     """
@@ -118,17 +127,75 @@ def test_post_admin_ingest_success(client):
     data = response.json()
 
     assert "status" in data
+    assert data["status"] == "success"
+    assert "message" in data
+    assert "all sources" in data["message"].lower()
     assert "stats" in data
 
     stats = data["stats"]
     assert "sources_processed" in stats
+    assert "sources_succeeded" in stats
+    assert "sources_failed" in stats
     assert "total_new_articles" in stats
     assert "total_duplicates" in stats
     assert "total_errors" in stats
     assert "duration_seconds" in stats
+    assert "source_results" in stats
 
     # Should process at least one source
     assert stats["sources_processed"] >= 1
+
+
+@pytest.mark.integration
+@pytest.mark.slow
+def test_post_admin_ingest_single_source_success(client):
+    """Test POST /api/v1/news/admin/ingest with source_id parameter.
+
+    Note: This test is marked as slow because it actually fetches RSS feeds.
+    """
+    # First, get available sources
+    sources_response = client.get("/api/v1/news/sources")
+    assert sources_response.status_code == 200
+    sources = sources_response.json()["sources"]
+    assert len(sources) > 0, "No sources available for testing"
+
+    # Get first source ID
+    source_id = sources[0]["id"]
+
+    # Ingest single source
+    response = client.post(
+        "/api/v1/news/admin/ingest", params={"source_id": source_id}, timeout=300
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert "status" in data
+    assert data["status"] == "success"
+    assert "message" in data
+    assert "stats" in data
+
+    stats = data["stats"]
+    # Single-source stats structure
+    assert "source_name" in stats
+    assert "source_id" in stats
+    assert stats["source_id"] == source_id
+    assert "new_articles" in stats
+    assert "duplicates" in stats
+    assert "errors" in stats
+    assert "duration_seconds" in stats
+    assert "success" in stats
+
+
+@pytest.mark.integration
+def test_post_admin_ingest_invalid_source_id(client):
+    """Test POST /api/v1/news/admin/ingest with invalid source_id returns 404."""
+    response = client.post("/api/v1/news/admin/ingest", params={"source_id": 999999})
+
+    assert response.status_code == 404
+    data = response.json()
+    assert "detail" in data
+    assert "not found" in data["detail"].lower()
 
 
 @pytest.mark.integration

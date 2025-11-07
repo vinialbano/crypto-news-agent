@@ -1,6 +1,6 @@
 """News feature database operations (repository pattern)."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlmodel import Session, col, select
 
@@ -30,6 +30,18 @@ class NewsRepository:
         statement = select(NewsSource).where(NewsSource.is_active == True)
         return list(self.session.exec(statement).all())
 
+    def get_source_by_id(self, source_id: int) -> NewsSource | None:
+        """Get a news source by ID.
+
+        Args:
+            source_id: The ID of the source to retrieve
+
+        Returns:
+            NewsSource if found, None otherwise
+        """
+        statement = select(NewsSource).where(NewsSource.id == source_id)
+        return self.session.exec(statement).first()
+
     def update_ingestion_status(
         self,
         *,
@@ -44,7 +56,7 @@ class NewsRepository:
         if source:
             if success:
                 source.ingestion_count += 1
-                source.last_ingestion_at = datetime.utcnow()
+                source.last_ingestion_at = datetime.now(UTC)
                 source.last_error = None
             else:
                 source.last_error = error_message

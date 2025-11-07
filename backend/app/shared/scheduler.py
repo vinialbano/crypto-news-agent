@@ -27,10 +27,14 @@ def run_scheduled_ingestion() -> None:
     with Session(engine) as session:
         try:
             service = create_ingestion_service(session)
-            stats = service.run_ingestion()
+            stats = service.ingest_all_sources()
             session.commit()
             logger.info(
-                f"Scheduled ingestion completed: {stats['total_new_articles']} new articles"
+                f"Scheduled ingestion completed: "
+                f"{stats['sources_processed']} sources, "
+                f"{stats['total_new_articles']} new articles, "
+                f"{stats['sources_succeeded']} succeeded, "
+                f"{stats['sources_failed']} failed"
             )
         except Exception as e:
             session.rollback()

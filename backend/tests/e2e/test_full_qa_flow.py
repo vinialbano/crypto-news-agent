@@ -24,21 +24,18 @@ def db_session():
 
 @pytest.mark.e2e
 @pytest.mark.slow
-def test_complete_qa_flow(client, db_session):
+def test_complete_qa_flow(client, seed_test_articles):
     """Test complete Q&A flow: ingestion → storage → retrieval → answer.
 
     This test verifies the entire pipeline:
-    1. Articles exist in database (from previous ingestion)
+    1. Articles exist in database (seeded by fixture)
     2. Ask a question via WebSocket
     3. Semantic search finds relevant articles
     4. LLM generates answer based on articles
     5. Answer is streamed back with sources
     """
-    # Step 1: Verify we have articles in database
-    articles = db_session.exec(select(NewsArticle).limit(10)).all()
-    assert len(articles) > 0, "Database should have articles for Q&A"
-
-    print(f"\nFound {len(articles)} articles in database")
+    # Step 1: Articles are seeded by fixture
+    print(f"\nUsing {len(seed_test_articles)} test articles")
 
     # Step 2: Ask a question about crypto news
     with client.websocket_connect("/api/v1/questions/ws/ask") as websocket:
@@ -175,9 +172,9 @@ def test_data_freshness(client, db_session):
     assert recent_article is not None, "Should have recent articles"
 
     # Check that article is from recent ingestion
-    import datetime
+    from datetime import UTC, datetime
 
-    now = datetime.datetime.utcnow()
+    now = datetime.now(UTC)
     age_hours = (
         now - recent_article.ingested_at.replace(tzinfo=None)
     ).total_seconds() / 3600

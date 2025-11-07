@@ -4,12 +4,13 @@ import asyncio
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.core.config import settings
-from app.shared.deps import RAGServiceDep
+from app.shared.deps import ContentModerationDep, RAGServiceDep
+from app.shared.exceptions import InvalidQuestionError
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ def _check_rate_limit(client_id: str) -> bool:
     Returns:
         True if within rate limit, False if exceeded
     """
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     cutoff = now - timedelta(minutes=1)
 
     # Clean up old timestamps
@@ -50,12 +51,14 @@ def _check_rate_limit(client_id: str) -> bool:
 async def ask_question_websocket(
     websocket: WebSocket,
     rag_service: RAGServiceDep,
+    content_moderation: ContentModerationDep,
 ):
     """WebSocket endpoint for streaming question answering.
 
     Args:
         websocket: WebSocket connection
         rag_service: RAG service injected via dependency injection
+        content_moderation: Content moderation service for input validation
 
     Protocol:
     1. Client sends: {"question": "What happened to Bitcoin today?"}
@@ -66,8 +69,9 @@ async def ask_question_websocket(
        - {"type": "done"} - Streaming complete
        - {"type": "error", "content": "message"} - On error
 
-    Security features:
-    - Rate limiting: Max questions per minute per client
+    Security features (in order):
+    - Rate limiting: Max questions per minute per client (checked first)
+    - Content moderation: Filters profanity, prompt injection, spam
     - Connection timeout: Auto-disconnect after configured timeout
     """
     await websocket.accept()
@@ -85,6 +89,19 @@ async def ask_question_websocket(
                 message = json.loads(data)
                 question = message.get("question", "").strip()
 
+                # Check rate limit FIRST (before any processing)
+                # This prevents abuse via content validation probing
+                if not _check_rate_limit(client_id):
+                    logger.warning(f"Rate limit exceeded for client: {client_id}")
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "content": "Rate limit exceeded. Please wait before sending more questions.",
+                        }
+                    )
+                    continue
+
+                # Basic validation (empty check)
                 if not question:
                     await websocket.send_json(
                         {
@@ -94,13 +111,17 @@ async def ask_question_websocket(
                     )
                     continue
 
-                # Check rate limit
-                if not _check_rate_limit(client_id):
-                    logger.warning(f"Rate limit exceeded for client: {client_id}")
+                # Content moderation (after rate limit)
+                try:
+                    content_moderation.validate_or_raise(question)
+                except InvalidQuestionError as e:
+                    logger.warning(
+                        f"Content moderation rejected question from {client_id}: {e}"
+                    )
                     await websocket.send_json(
                         {
                             "type": "error",
-                            "content": "Rate limit exceeded. Please wait before sending more questions.",
+                            "content": str(e),
                         }
                     )
                     continue

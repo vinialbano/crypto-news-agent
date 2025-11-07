@@ -1,6 +1,6 @@
 """Unit tests for NewsArticle CRUD operations."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pytest
@@ -36,7 +36,7 @@ def test_create_news_article(session: Session):
         url="https://example.com/bitcoin-surges",
         content="Bitcoin reached a new all-time high today, surpassing $100,000 for the first time in history.",
         source_name="DL News",
-        published_at=datetime.utcnow(),
+        published_at=datetime.now(UTC),
         embedding=embedding,
     )
 
@@ -58,7 +58,7 @@ def test_get_by_hash_existing(session: Session):
         url="https://example.com/bitcoin-surges",
         content="Bitcoin reached a new all-time high today.",
         source_name="DL News",
-        published_at=datetime.utcnow(),
+        published_at=datetime.now(UTC),
         embedding=embedding,
     )
 
@@ -85,7 +85,7 @@ def test_duplicate_detection_same_title_and_url(session: Session):
         url="https://example.com/bitcoin-surges",
         content="Content version 1",
         source_name="DL News",
-        published_at=datetime.utcnow(),
+        published_at=datetime.now(UTC),
         embedding=embedding,
     )
 
@@ -95,7 +95,7 @@ def test_duplicate_detection_same_title_and_url(session: Session):
             url="https://example.com/bitcoin-surges",
             content="Content version 2",
             source_name="DL News",
-            published_at=datetime.utcnow(),
+            published_at=datetime.now(UTC),
             embedding=embedding,
         )
 
@@ -110,7 +110,7 @@ def test_get_recent_articles(session: Session):
             url=f"https://example.com/article-{i}",
             content=f"Content for article {i}",
             source_name="DL News",
-            published_at=datetime.utcnow() - timedelta(hours=i),
+            published_at=datetime.now(UTC) - timedelta(hours=i),
             embedding=embedding,
         )
 
@@ -129,7 +129,7 @@ def test_get_recent_articles_with_source_filter(session: Session):
         url="https://example.com/dl-1",
         content="Content 1",
         source_name="DL News",
-        published_at=datetime.utcnow(),
+        published_at=datetime.now(UTC),
         embedding=embedding,
     )
 
@@ -138,7 +138,7 @@ def test_get_recent_articles_with_source_filter(session: Session):
         url="https://example.com/defiant-1",
         content="Content 2",
         source_name="The Defiant",
-        published_at=datetime.utcnow(),
+        published_at=datetime.now(UTC),
         embedding=embedding,
     )
 
@@ -147,7 +147,7 @@ def test_get_recent_articles_with_source_filter(session: Session):
         url="https://example.com/dl-2",
         content="Content 3",
         source_name="DL News",
-        published_at=datetime.utcnow(),
+        published_at=datetime.now(UTC),
         embedding=embedding,
     )
 

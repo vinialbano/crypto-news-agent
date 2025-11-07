@@ -5,9 +5,7 @@ Run with: pytest tests/integration/test_rss_fetcher_integration.py -v -s
 """
 
 import pytest
-from sqlmodel import Session
 
-from app.core.db import engine
 from app.features.news.models import NewsSource
 from app.features.news.rss_fetcher import RSSFetcher
 
@@ -18,15 +16,8 @@ def rss_fetcher():
     return RSSFetcher()
 
 
-@pytest.fixture(scope="module")
-def db_session():
-    """Create database session for integration tests."""
-    with Session(engine) as session:
-        yield session
-
-
 @pytest.mark.integration
-def test_fetch_dl_news(rss_fetcher, db_session):
+def test_fetch_dl_news(rss_fetcher):
     """Test fetching from DL News RSS feed.
 
     Note: This test may be skipped if the external RSS feed is
@@ -39,30 +30,30 @@ def test_fetch_dl_news(rss_fetcher, db_session):
         is_active=True,
     )
 
-    stats = rss_fetcher.fetch_feed(db_session, source)
+    articles = rss_fetcher.fetch_feed(source)
 
     # Verify we got some articles
-    print(f"\nDL News stats: {stats}")
+    print(f"\nDL News: Fetched {len(articles)} articles")
 
-    # If the feed failed completely (returns HTML instead of XML), skip test
-    if (
-        stats["errors"] > 0
-        and stats["new_articles"] == 0
-        and stats["duplicate_articles"] == 0
-    ):
+    # If the feed failed completely, skip test
+    if len(articles) == 0:
         pytest.skip(
-            "DL News feed is temporarily unavailable or returning non-XML content"
+            "DL News feed is temporarily unavailable or returning no articles"
         )
 
-    assert stats["new_articles"] >= 0  # May have duplicates if run multiple times
+    assert len(articles) > 0, "Should have fetched at least 1 article"
 
-    # Note: new_articles may be 0 if articles already exist in DB
-    total_processed = stats["new_articles"] + stats["duplicate_articles"]
-    assert total_processed > 0, "Should have processed at least 1 article"
+    # Verify article structure
+    article = articles[0]
+    assert "title" in article
+    assert "url" in article
+    assert "content" in article
+    assert "published_at" in article
+    assert len(article["content"]) > 100, "Article should have substantial content"
 
 
 @pytest.mark.integration
-def test_fetch_the_defiant(rss_fetcher, db_session):
+def test_fetch_the_defiant(rss_fetcher):
     """Test fetching from The Defiant RSS feed."""
     source = NewsSource(
         id=998,  # Temporary ID for testing
@@ -71,19 +62,21 @@ def test_fetch_the_defiant(rss_fetcher, db_session):
         is_active=True,
     )
 
-    stats = rss_fetcher.fetch_feed(db_session, source)
+    articles = rss_fetcher.fetch_feed(source)
 
     # Verify we got some articles
-    print(f"\nThe Defiant stats: {stats}")
-    assert stats["new_articles"] >= 0
-    assert stats["errors"] == 0
+    print(f"\nThe Defiant: Fetched {len(articles)} articles")
+    assert len(articles) > 0, "Should have fetched at least 1 article"
 
-    total_processed = stats["new_articles"] + stats["duplicate_articles"]
-    assert total_processed > 0, "Should have processed at least 1 article"
+    # Verify article structure
+    article = articles[0]
+    assert "title" in article
+    assert "url" in article
+    assert "content" in article
 
 
 @pytest.mark.integration
-def test_fetch_cointelegraph(rss_fetcher, db_session):
+def test_fetch_cointelegraph(rss_fetcher):
     """Test fetching from Cointelegraph RSS feed."""
     source = NewsSource(
         id=997,  # Temporary ID for testing
@@ -92,22 +85,22 @@ def test_fetch_cointelegraph(rss_fetcher, db_session):
         is_active=True,
     )
 
-    stats = rss_fetcher.fetch_feed(db_session, source)
+    articles = rss_fetcher.fetch_feed(source)
 
     # Verify we got some articles
-    print(f"\nCointelegraph stats: {stats}")
-    assert stats["new_articles"] >= 0
-    assert stats["errors"] == 0
+    print(f"\nCointelegraph: Fetched {len(articles)} articles")
+    assert len(articles) > 0, "Should have fetched at least 1 article"
 
-    total_processed = stats["new_articles"] + stats["duplicate_articles"]
-    assert total_processed > 0, "Should have processed at least 1 article"
+    # Verify article structure
+    article = articles[0]
+    assert "title" in article
+    assert "url" in article
+    assert "content" in article
 
 
 @pytest.mark.integration
-def test_article_content_quality(rss_fetcher, db_session):
+def test_article_content_quality(rss_fetcher):
     """Test that fetched articles have full content, not just summaries."""
-    from app.features.news.repository import NewsRepository
-
     source = NewsSource(
         id=996,  # Temporary ID for testing
         name="Content Quality Test",
@@ -116,32 +109,31 @@ def test_article_content_quality(rss_fetcher, db_session):
     )
 
     # Fetch articles
-    stats = rss_fetcher.fetch_feed(db_session, source)
+    articles = rss_fetcher.fetch_feed(source)
 
-    # Get one of the recently fetched articles
-    repo = NewsRepository(db_session)
-    articles = repo.get_recent_articles(limit=1)
+    if not articles:
+        pytest.skip("No articles fetched to test content quality")
 
-    if articles:
-        article = articles[0]
-        print("\nSample article:")
-        print(f"Title: {article.title}")
-        print(f"Content length: {len(article.content)} characters")
-        print(f"Content preview: {article.content[:200]}...")
+    # Test first article
+    article = articles[0]
+    print("\nSample article:")
+    print(f"Title: {article['title']}")
+    print(f"Content length: {len(article['content'])} characters")
+    print(f"Content preview: {article['content'][:200]}...")
 
-        # Verify content is substantial (full article, not just summary)
-        assert len(article.content) > 100, "Article should have substantial content"
-
-        # Verify we have embeddings
-        assert article.embedding is not None, "Article should have embeddings"
-        assert len(article.embedding) == 768, (
-            "Embedding should be 768 dimensions (nomic-embed-text)"
-        )
+    # Verify content is substantial (full article, not just summary)
+    assert len(article["content"]) > 100, "Article should have substantial content"
 
 
 @pytest.mark.integration
-def test_duplicate_prevention(rss_fetcher, db_session):
-    """Test that fetching the same feed twice prevents duplicates."""
+def test_duplicate_prevention(rss_fetcher):
+    """Test that fetching the same feed twice returns same articles.
+
+    Note: This test verifies that the fetcher returns consistent results.
+    Actual duplicate detection is handled by IngestionService.
+    """
+    import time
+
     source = NewsSource(
         id=995,  # Temporary ID for testing
         name="Duplicate Prevention Test",
@@ -150,14 +142,31 @@ def test_duplicate_prevention(rss_fetcher, db_session):
     )
 
     # First fetch
-    stats1 = rss_fetcher.fetch_feed(db_session, source)
-    print(f"\nFirst fetch stats: {stats1}")
+    articles1 = rss_fetcher.fetch_feed(source)
+    print(f"\nFirst fetch: {len(articles1)} articles")
 
-    # Second fetch (should detect duplicates)
-    stats2 = rss_fetcher.fetch_feed(db_session, source)
-    print(f"Second fetch stats: {stats2}")
+    # Wait to avoid rate limiting (429 errors)
+    time.sleep(5)
 
-    # On second fetch, we should have mostly duplicates
-    assert stats2["duplicate_articles"] >= stats2["new_articles"], (
-        "Second fetch should have more duplicates than new articles"
+    # Second fetch (should return same articles from feed)
+    articles2 = rss_fetcher.fetch_feed(source)
+    print(f"Second fetch: {len(articles2)} articles")
+
+    # If EITHER fetch was rate limited or failed, skip test
+    # External RSS feeds are unreliable and may fail at any time
+    if len(articles1) == 0 or len(articles2) == 0:
+        pytest.skip(
+            f"One or both fetches failed (first: {len(articles1)}, second: {len(articles2)}). "
+            "External RSS API is unreliable during testing."
+        )
+
+    # Both fetches should return the same number of articles
+    # (RSS feeds typically return the same items)
+    assert len(articles1) == len(articles2), (
+        "Fetching same feed twice should return same number of articles"
     )
+
+    # URLs should match (same articles)
+    urls1 = {article["url"] for article in articles1}
+    urls2 = {article["url"] for article in articles2}
+    assert urls1 == urls2, "Should fetch same article URLs"

@@ -12,10 +12,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def seed_news_sources() -> None:
+def seed_news_sources(session: Session | None = None) -> None:
     """Seed/update the database with news sources from configuration.
 
     Creates new sources or updates existing ones if RSS URL has changed.
+
+    Args:
+        session: Optional database session. If not provided, creates a new one.
     """
     sources_config = [
         {
@@ -32,7 +35,12 @@ def seed_news_sources() -> None:
         },
     ]
 
-    with Session(engine) as session:
+    # Use provided session or create a new one
+    should_manage_session = session is None
+    if should_manage_session:
+        session = Session(engine)
+
+    try:
         for source_config in sources_config:
             # Check if source exists
             statement = select(NewsSource).where(
@@ -49,7 +57,8 @@ def seed_news_sources() -> None:
                     )
                     existing_source.rss_url = source_config["rss_url"]
                     session.add(existing_source)
-                    session.commit()
+                    if should_manage_session:
+                        session.commit()
                 else:
                     logger.info(f"News source '{source_config['name']}' is up to date")
                 continue
@@ -62,14 +71,20 @@ def seed_news_sources() -> None:
                     is_active=True,
                 )
                 session.add(source)
-                session.commit()
+                if should_manage_session:
+                    session.commit()
                 logger.info(f"Created news source: {source.name}")
             except Exception as e:
                 logger.error(f"Failed to create source '{source_config['name']}': {e}")
-                session.rollback()
+                if should_manage_session:
+                    session.rollback()
                 continue
 
-    logger.info("✓ News sources seeding/update complete")
+        logger.info("✓ News sources seeding/update complete")
+    finally:
+        # Only close session if we created it
+        if should_manage_session:
+            session.close()
 
 
 if __name__ == "__main__":

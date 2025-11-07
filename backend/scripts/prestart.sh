@@ -14,4 +14,4 @@ python -m app.shared.check_ollama
 alembic upgrade head
 
 # Seed news sources
-python -m app.features.news.scripts.seed_sources
+python scripts/seed_sources.py
