@@ -63,7 +63,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
                         href={source.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hover:underline opacity-90 hover:opacity-100"
+                        className="hover:underline opacity-90 hover:opacity-100 text-blue-600 hover:text-blue-800"
                       >
                         {source.title} - {source.source}
                       </a>
@@ -73,8 +73,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
               </div>
             )}
             <p className="text-sm whitespace-pre-wrap break-words">
-              {message.content}
-              {message.isStreaming && (
+              {message.content || (message.isStreaming && (
+                <span className="italic opacity-70 animate-pulse">Thinking...</span>
+              ))}
+              {message.isStreaming && message.content && (
                 <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
               )}
             </p>
@@ -90,3 +92,5 @@ export function ChatMessage({ message }: ChatMessageProps) {
     </div>
   )
 }
+
+

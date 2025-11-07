@@ -55,11 +55,11 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] max-w-5xl mx-auto px-4 py-6">
+    <div className="flex flex-col h-[calc(100vh-8rem)]">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold">Crypto News Chat</h1>
+          <h1 className="text-2xl font-bold font-serif italic">Chat</h1>
           <p className="text-sm text-muted-foreground">
             Ask questions about cryptocurrency news
           </p>

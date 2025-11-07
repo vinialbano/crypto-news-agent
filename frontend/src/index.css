@@ -35,6 +35,11 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+@utility animate-duration-* {
+  animation-duration: --value(integer)ms;
+  animation-duration: --value([*]);
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);

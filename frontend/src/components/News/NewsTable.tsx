@@ -117,7 +117,7 @@ export function NewsTable() {
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['news'],
-    queryFn: () => NewsService.getNewsArticles({ limit: 50 }),
+    queryFn: () => NewsService.getNewsArticles({ limit: 100 }),
   })
 
   const table = useReactTable({

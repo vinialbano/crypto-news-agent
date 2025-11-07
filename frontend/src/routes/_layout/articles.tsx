@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { NewsTable } from '@/components/News/NewsTable'
 
-export const Route = createFileRoute('/_layout/news')({
+export const Route = createFileRoute('/_layout/articles')({
   component: NewsPage,
 })
 
@@ -9,8 +9,8 @@ function NewsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-3xl font-bold">Crypto News</h1>
-        <p className="text-gray-600 dark:text-gray-400">
+        <h1 className="text-2xl font-bold font-serif italic">Recent Articles</h1>
+        <p className="text-sm text-muted-foreground">
           Latest cryptocurrency news from trusted sources
         </p>
       </div>
