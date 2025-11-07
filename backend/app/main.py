@@ -1,7 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
 
-import sentry_sdk
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
@@ -33,9 +32,6 @@ async def lifespan(app: FastAPI):
     logger.info("Background scheduler stopped")
 
 
-if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
-    sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
-
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url="/openapi.json",
@@ -44,10 +40,10 @@ app = FastAPI(
 )
 
 # Set all CORS enabled origins
-if settings.all_cors_origins:
+if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.all_cors_origins,
+        allow_origins=settings.BACKEND_CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

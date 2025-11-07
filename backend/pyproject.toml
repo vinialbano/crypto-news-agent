@@ -23,8 +23,6 @@ dependencies = [
     # News ingestion
     "feedparser>=6.0.12",
     "apscheduler>=3.11.1",
-    # Monitoring
-    "sentry-sdk[fastapi]<2.0.0,>=1.40.6",
     "newspaper3k>=0.2.8",
     "python-dateutil>=2.9.0.post0",
     "lxml-html-clean>=0.4.3",

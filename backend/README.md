@@ -690,20 +690,6 @@ If you see `ModuleNotFoundError`:
 2. Re-run dependency installation: `uv sync`
 3. Check Python version (requires 3.10+)
 
-## Production Deployment
-
-For production deployment:
-
-1. **Remove development overrides**: Don't use `docker-compose.override.yml`
-2. **Set production settings**:
-   - Change `ENVIRONMENT=production` in `.env`
-   - Configure `SENTRY_DSN` for error tracking
-3. **Use production command**: Change to `fastapi run` (not `fastapi run --reload`)
-4. **Scale workers**: Use multiple Uvicorn workers for higher throughput
-5. **Monitor logs**: Integrate with centralized logging (e.g., ELK stack)
-6. **Backup database**: Regular PostgreSQL backups with pgvector extension
-7. **Secure Ollama**: Ensure Ollama is not exposed publicly
-
 ## Contributing
 
 When contributing to the backend:
