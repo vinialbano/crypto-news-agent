@@ -1,6 +1,39 @@
+# IDE
 .vscode
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.cover
+
+# JavaScript/Node
 node_modules/
+.vite/
+dist/
+dist-ssr/
+*.local
+
+# Playwright
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Environment
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db

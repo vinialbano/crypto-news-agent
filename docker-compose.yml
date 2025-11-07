@@ -34,7 +34,6 @@ services:
       start_period: 60s
 
   backend:
-    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
     restart: always
     depends_on:
       db:
@@ -43,15 +42,11 @@ services:
     env_file:
       - .env
     environment:
-      - DOMAIN=${DOMAIN}
-      - ENVIRONMENT=${ENVIRONMENT}
-      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
       - POSTGRES_SERVER=db
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
-      - SENTRY_DSN=${SENTRY_DSN}
       - OLLAMA_HOST=${OLLAMA_HOST}
       - OLLAMA_CHAT_MODEL=${OLLAMA_CHAT_MODEL}
       - OLLAMA_EMBEDDING_MODEL=${OLLAMA_EMBEDDING_MODEL}
@@ -68,7 +63,6 @@ services:
       context: ./backend
 
   frontend:
-    image: '${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}'
     restart: always
     build:
       context: ./frontend

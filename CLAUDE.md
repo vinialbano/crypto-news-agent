@@ -8,7 +8,7 @@ Crypto News Agent is a full-stack application built from the FastAPI full-stack 
 
 **Technology Stack:**
 - **Backend**: FastAPI + SQLModel (ORM) + PostgreSQL + Alembic (migrations)
-- **Frontend**: React + TypeScript + Vite + TanStack Query/Router + Chakra UI
+- **Frontend**: React + TypeScript + Vite + TanStack Query/Router + Shadcn UI + Tailwind CSS
 - **Testing**: Pytest (backend) + Playwright (E2E frontend)
 - **Development**: Docker Compose + uv (Python) + npm (Node.js)
 
@@ -27,7 +27,7 @@ Crypto News Agent is a full-stack application built from the FastAPI full-stack 
 
 **This applies to ALL external dependencies including:**
 - FastAPI, SQLModel, Pydantic, Alembic (backend)
-- React, TanStack Query, TanStack Router, Chakra UI, Vite (frontend)
+- React, TanStack Query, TanStack Router, Shadcn UI, Tailwind CSS, Vite (frontend)
 - Pytest, Playwright (testing)
 - Any npm or pip package not written by this project
 
@@ -46,9 +46,6 @@ Services run on:
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
-- Adminer (DB): http://localhost:8080
-- Traefik UI: http://localhost:8090
-- MailCatcher: http://localhost:1080
 
 **Stop specific service for local development:**
 ```bash
@@ -195,20 +192,19 @@ PostgreSQL Database
 
 **Entry Point**: `frontend/src/main.tsx`
 - React app with TanStack Router
-- Theme provider (Chakra UI)
+- Theme provider (next-themes)
 
 **Structure**:
 - `src/routes/`: File-based routing with TanStack Router
-- `src/components/`: Reusable UI components
+- `src/components/`: Reusable UI components (Shadcn UI)
 - `src/client/`: Auto-generated OpenAPI client (DO NOT EDIT MANUALLY)
 - `src/hooks/`: Custom React hooks
-- `theme.tsx`: Chakra UI custom theme configuration
 
 **Key Patterns:**
 - **API Integration**: Use generated client from `src/client/` with TanStack Query
 - **State Management**: TanStack Query for server state, React Context for UI state
 - **Routing**: TanStack Router with file-based conventions
-- **Forms**: React Hook Form with Chakra UI components
+- **Styling**: Tailwind CSS with Shadcn UI components
 
 ### Configuration Management
 
@@ -302,10 +298,6 @@ Configurations exist for:
 - Python tests via Test Explorer
 - Editor uses correct virtual environment (`.venv/bin/python`)
 
-### Email Testing
-
-MailCatcher runs at http://localhost:1080 for local email testing. No real SMTP needed in development.
-
 ### GitHub Spec Kit Integration
 
 This project uses GitHub Spec Kit for specification-driven development. See `.specify/` directory:
@@ -316,10 +308,13 @@ This project uses GitHub Spec Kit for specification-driven development. See `.sp
 When creating features, follow the spec workflow defined in constitution and templates.
 
 ## Active Technologies
-- Python 3.11+ (backend), TypeScript 5.x (frontend) + FastAPI, LangChain, Ollama, langchain-ollama, langchain-community, pgvector-python, SQLModel, Alembic, React, TanStack Query, Chakra UI, Vite, Zod (001-crypto-news-agent)
-- PostgreSQL 15+ with pgvector extension for vector embeddings and semantic search (001-crypto-news-agent)
-- Python 3.11+ (backend), TypeScript 5.x (frontend) + FastAPI, LangChain, Ollama, langchain-ollama, langchain-community, pgvector-python, SQLModel, Alembic, React, TanStack Query, Shadcn UI, Tailwind CSS, Vite, Zod (001-crypto-news-agent)
+- Python 3.11+ (backend), TypeScript 5.x (frontend)
+- FastAPI, LangChain, Ollama, langchain-ollama, langchain-community, pgvector-python, SQLModel, Alembic
+- React, TanStack Query, TanStack Router, Shadcn UI, Tailwind CSS, Vite
+- PostgreSQL 15+ with pgvector extension for vector embeddings and semantic search
 
 ## Recent Changes
-- 001-crypto-news-agent: Added Python 3.11+ (backend), TypeScript 5.x (frontend) + FastAPI, LangChain, Ollama, langchain-ollama, langchain-community, pgvector-python, SQLModel, Alembic, React, TanStack Query, Chakra UI, Vite, Zod
-- Add to memory. Always use npm to install javascript dependencies. Never edit the package.json file directly
+- Removed production infrastructure (Sentry, unused environment variables)
+- Simplified Docker configuration for local development only
+- Cleaned up frontend dependencies and styling system
+- Always use npm to install javascript dependencies. Never edit the package.json file directly
