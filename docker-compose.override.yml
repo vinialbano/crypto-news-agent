@@ -12,10 +12,9 @@ services:
     build:
       context: ./backend
     command:
-      - fastapi
-      - run
-      - --reload
-      - "app/main.py"
+      - bash
+      - -c
+      - "bash scripts/prestart.sh && fastapi run --reload app/main.py"
     develop:
       watch:
         - path: ./backend

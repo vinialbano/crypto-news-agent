@@ -3,8 +3,5 @@
 set -e
 set -x
 
-# Let the DB start and check Ollama connectivity
-python app/scripts/backend_pre_start.py
-
-# Run migrations
+# Run database migrations
 alembic upgrade head
