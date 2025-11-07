@@ -1,19 +1,35 @@
-# FastAPI Project - Frontend
+# Crypto News Agent - Frontend
 
-The frontend is built with [Vite](https://vitejs.dev/), [React](https://reactjs.org/), [TypeScript](https://www.typescriptlang.org/), [TanStack Query](https://tanstack.com/query), [TanStack Router](https://tanstack.com/router) and [Chakra UI](https://chakra-ui.com/).
+The frontend is built with [Vite](https://vitejs.dev/), [React](https://reactjs.org/), [TypeScript](https://www.typescriptlang.org/), [TanStack Query](https://tanstack.com/query), [TanStack Router](https://tanstack.com/router), and [Shadcn UI](https://ui.shadcn.com/) + [Tailwind CSS](https://tailwindcss.com/).
 
-## Frontend development
+## Technology Stack
+
+- **React 18** - UI library with hooks
+- **TypeScript** - Type-safe JavaScript
+- **Vite** - Fast build tool and dev server
+- **TanStack Query** - Data fetching and caching
+- **TanStack Router** - File-based routing
+- **Shadcn UI** - Composable UI components
+- **Tailwind CSS** - Utility-first CSS framework
+- **Playwright** - End-to-end testing
+
+## Frontend Development
+
+### Prerequisites
 
 Before you begin, ensure that you have either the Node Version Manager (nvm) or Fast Node Manager (fnm) installed on your system.
 
 * To install fnm follow the [official fnm guide](https://github.com/Schniz/fnm#installation). If you prefer nvm, you can install it using the [official nvm guide](https://github.com/nvm-sh/nvm#installing-and-updating).
 
-* After installing either nvm or fnm, proceed to the `frontend` directory:
+### Setup
+
+1. Navigate to the `frontend` directory:
 
 ```bash
 cd frontend
 ```
-* If the Node.js version specified in the `.nvmrc` file isn't installed on your system, you can install it using the appropriate command:
+
+2. If the Node.js version specified in the `.nvmrc` file isn't installed on your system, install it:
 
 ```bash
 # If using fnm
@@ -23,7 +39,7 @@ fnm install
 nvm install
 ```
 
-* Once the installation is complete, switch to the installed version:
+3. Switch to the installed version:
 
 ```bash
 # If using fnm
@@ -33,122 +49,192 @@ fnm use
 nvm use
 ```
 
-* Within the `frontend` directory, install the necessary NPM packages:
+4. Install NPM packages:
 
 ```bash
 npm install
 ```
 
-* And start the live server with the following `npm` script:
+5. Start the development server:
 
 ```bash
 npm run dev
 ```
 
-* Then open your browser at http://localhost:5173/.
+6. Open your browser at http://localhost:5173/
 
-Notice that this live server is not running inside Docker, it's for local development, and that is the recommended workflow. Once you are happy with your frontend, you can build the frontend Docker image and start it, to test it in a production-like environment. But building the image at every change will not be as productive as running the local development server with live reload.
+**Note**: This local development server is not running inside Docker - it's for rapid development with hot module replacement (HMR). This is the recommended workflow for frontend development. Once you're happy with your changes, you can test them in the Docker environment.
 
 Check the file `package.json` to see other available options.
 
-### Removing the frontend
+## Generate API Client
 
-If you are developing an API-only app and want to remove the frontend, you can do it easily:
+The frontend uses an auto-generated TypeScript client for the backend API. Regenerate it whenever the backend API changes:
 
-* Remove the `./frontend` directory.
+### Automatically (Recommended)
 
-* In the `docker-compose.yml` file, remove the whole service / section `frontend`.
-
-* In the `docker-compose.override.yml` file, remove the whole service / section `frontend` and `playwright`.
-
-Done, you have a frontend-less (api-only) app. 🤓
-
----
-
-If you want, you can also remove the `FRONTEND` environment variables from:
-
-* `.env`
-* `./scripts/*.sh`
-
-But it would be only to clean them up, leaving them won't really have any effect either way.
-
-## Generate Client
-
-### Automatically
-
-* Activate the backend virtual environment.
-* From the top level project directory, run the script:
+From the project root directory, run:
 
 ```bash
 ./scripts/generate-client.sh
 ```
 
-* Commit the changes.
+Then commit the changes.
 
 ### Manually
 
-* Start the Docker Compose stack.
+1. Start the Docker Compose stack to ensure the backend is running
 
-* Download the OpenAPI JSON file from `http://localhost/api/v1/openapi.json` and copy it to a new file `openapi.json` at the root of the `frontend` directory.
+2. Download the OpenAPI JSON file:
 
-* To generate the frontend client, run:
+```bash
+curl http://localhost:8000/openapi.json > frontend/openapi.json
+```
+
+3. Generate the frontend client:
 
 ```bash
 npm run generate-client
 ```
 
-* Commit the changes.
+4. Commit the changes
 
-Notice that everytime the backend changes (changing the OpenAPI schema), you should follow these steps again to update the frontend client.
+**Important**: Every time the backend changes (updating the OpenAPI schema), you should regenerate the frontend client using one of these methods.
 
 ## Using a Remote API
 
-If you want to use a remote API, you can set the environment variable `VITE_API_URL` to the URL of the remote API. For example, you can set it in the `frontend/.env` file:
+If you want to use a remote API instead of the local Docker backend, set the `VITE_API_URL` environment variable in `frontend/.env`:
 
 ```env
 VITE_API_URL=https://api.my-domain.example.com
 ```
 
-Then, when you run the frontend, it will use that URL as the base URL for the API.
+Then, when you run the frontend, it will use that URL as the base URL for all API calls.
 
 ## Code Structure
 
 The frontend code is structured as follows:
 
-* `frontend/src` - The main frontend code.
-* `frontend/src/assets` - Static assets.
-* `frontend/src/client` - The generated OpenAPI client.
-* `frontend/src/components` -  The different components of the frontend.
-* `frontend/src/hooks` - Custom hooks.
-* `frontend/src/routes` - The different routes of the frontend which include the pages.
-* `theme.tsx` - The Chakra UI custom theme.
+```
+frontend/src/
+├── assets/          # Static assets (images, icons, etc.)
+├── client/          # Auto-generated OpenAPI client (DO NOT EDIT)
+├── components/      # Reusable UI components
+│   ├── Chat/        # Chat interface components
+│   ├── Common/      # Shared components (sidebar, nav, etc.)
+│   ├── News/        # News table and article components
+│   └── ui/          # Shadcn UI components
+├── hooks/           # Custom React hooks
+│   └── useWebSocket.ts  # WebSocket connection hook
+├── routes/          # File-based routing (TanStack Router)
+│   └── _layout/     # Layout route with nested pages
+│       ├── index.tsx    # Home page
+│       ├── chat.tsx     # Chat page
+│       └── news.tsx     # News page
+├── types/           # TypeScript type definitions
+├── lib/             # Utility functions
+├── index.css        # Global styles (Tailwind)
+├── main.tsx         # Application entry point
+└── routeTree.gen.ts # Auto-generated route tree (DO NOT EDIT)
+```
+
+### Key Files:
+
+- **`client/`** - Auto-generated from backend OpenAPI schema. Never edit manually.
+- **`routes/`** - File-based routing powered by TanStack Router. Add new pages here.
+- **`components/ui/`** - Shadcn UI components. Add more using `npx shadcn@latest add <component>`.
+- **`routeTree.gen.ts`** - Auto-generated route configuration. Never edit manually.
 
 ## End-to-End Testing with Playwright
 
-The frontend includes initial end-to-end tests using Playwright. To run the tests, you need to have the Docker Compose stack running. Start the stack with the following command:
+The frontend includes E2E tests using Playwright.
+
+### Running Tests
+
+1. Start the Docker Compose stack (backend must be running):
 
 ```bash
 docker compose up -d --wait backend
 ```
 
-Then, you can run the tests with the following command:
+2. Run the tests:
 
 ```bash
 npx playwright test
 ```
 
-You can also run your tests in UI mode to see the browser and interact with it running:
+3. Run tests in UI mode to see the browser:
 
 ```bash
 npx playwright test --ui
 ```
 
-To stop and remove the Docker Compose stack and clean the data created in tests, use the following command:
+4. Clean up after tests:
 
 ```bash
 docker compose down -v
 ```
 
-To update the tests, navigate to the tests directory and modify the existing test files or add new ones as needed.
+### Writing Tests
+
+To update tests, navigate to the `tests/` directory and modify existing test files or add new ones as needed.
 
 For more information on writing and running Playwright tests, refer to the official [Playwright documentation](https://playwright.dev/docs/intro).
+
+## Adding Shadcn UI Components
+
+This project uses [Shadcn UI](https://ui.shadcn.com/) for UI components. To add a new component:
+
+```bash
+npx shadcn@latest add <component-name>
+```
+
+Example:
+```bash
+npx shadcn@latest add dialog
+npx shadcn@latest add dropdown-menu
+npx shadcn@latest add tabs
+```
+
+Components will be added to `src/components/ui/` and can be customized as needed.
+
+## Available Scripts
+
+- `npm run dev` - Start Vite dev server with HMR
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build locally
+- `npm run lint` - Run Biome linter and formatter
+- `npm run generate-client` - Generate API client from OpenAPI schema
+- `npx playwright test` - Run E2E tests
+- `npx playwright test --ui` - Run E2E tests in UI mode
+
+## Development Workflow
+
+1. **Start Docker services** (backend, database, Ollama):
+   ```bash
+   docker compose up -d
+   ```
+
+2. **Stop the frontend Docker service** (to run locally):
+   ```bash
+   docker compose stop frontend
+   ```
+
+3. **Start local dev server**:
+   ```bash
+   npm run dev
+   ```
+
+4. **Make changes** - Vite HMR will automatically reload
+
+5. **Regenerate API client** (if backend changed):
+   ```bash
+   ./scripts/generate-client.sh
+   ```
+
+6. **Run tests**:
+   ```bash
+   npx playwright test
+   ```
+
+This workflow gives you the fastest development experience with instant hot module replacement while still using the Docker backend services.

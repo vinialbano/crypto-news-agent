@@ -2,6 +2,42 @@
 
 A RAG-powered crypto news aggregator with intelligent question answering using local LLMs. The system automatically ingests news from multiple crypto sources and enables natural language queries about recent developments in the crypto space.
 
+## The Challenge
+
+This project was built as a technical assessment with the following requirements:
+
+**Core Objective**: Build an LLM-powered web application that understands user questions and provides real-time, accurate answers based on the latest cryptocurrency news.
+
+**Key Requirements**:
+- Ingest live crypto news from multiple sources
+- Semantic search for relevant articles
+- LLM-powered answer generation with context
+- Real-time streaming responses (word-by-word)
+- Handle concurrent requests and edge cases
+- Basic content moderation for offensive input
+
+**Constraints**:
+- Backend: Any language
+- Frontend: React
+- News sources: DL News, The Defiant, Cointelegraph
+
+## Solution Approach
+
+My approach was to build a complete **RAG (Retrieval-Augmented Generation) pipeline**:
+
+1. **Ingestion**: RSS feeds → Parse with LangChain → Extract full-text with newspaper3k
+2. **Vectorization**: Generate embeddings with Ollama (nomic-embed-text)
+3. **Storage**: PostgreSQL with pgvector extension for semantic search
+4. **Retrieval**: Query embedding → Cosine similarity search → Top-K articles
+5. **Generation**: Feed context to LLM (llama3.2:3b) → Stream response token-by-token
+
+**Technology Choices**:
+- **Backend**: FastAPI + Python (rich ETL/vectorization ecosystem)
+- **LangChain**: RSSFeedLoader for easy XML parsing and content extraction
+- **WebSocket**: Bi-directional streaming (simpler than SSE for back-and-forth)
+- **Shadcn UI**: Rapid prototyping with composable components + MCP server
+- **FastAPI Template**: Jump-started with full-stack template, then cleaned
+
 ## Features
 
 - **Automated News Ingestion**: Fetches and processes articles from leading crypto news sources (DL News, The Defiant, Cointelegraph)
@@ -16,23 +52,22 @@ A RAG-powered crypto news aggregator with intelligent question answering using l
 ## Technology Stack
 
 ### Backend
-- **FastAPI** - Modern async Python web framework
-- **SQLModel** - Type-safe ORM (Pydantic + SQLAlchemy)
-- **PostgreSQL + pgvector** - Database with vector similarity search
-- **Ollama** - Local LLM server (nomic-embed-text for embeddings, qwen2.5 for chat)
-- **LangChain** - Framework for RAG and LLM applications
-- **APScheduler** - Background job scheduling
+- **FastAPI** - Modern async Python web framework (chosen for quick development + automatic OpenAPI docs)
+- **SQLModel** - Type-safe ORM (Pydantic + SQLAlchemy) for database operations
+- **PostgreSQL + pgvector** - Single database solution for both relational data and vector similarity search
+- **Ollama** - Local LLM server (nomic-embed-text for embeddings, llama3.2:3b for chat)
+- **LangChain** - Framework for RAG applications (RSSFeedLoader, document processing)
+- **APScheduler** - Background job scheduling for automatic ingestion
 
 ### Frontend
-- **React + TypeScript** - Modern frontend with hooks and Vite
-- **TanStack Query & Router** - Data fetching and routing
-- **Chakra UI** - Component library with dark mode
-- **Playwright** - End-to-end testing
+- **React + TypeScript** - Modern frontend with type safety
+- **TanStack Query & Router** - Data fetching/caching and file-based routing
+- **Shadcn UI + Tailwind CSS** - Composable component library with dark mode support
+- **Playwright** - End-to-end testing framework
 
 ### Infrastructure
-- **Docker Compose** - Development and production deployment
-- **Traefik** - Reverse proxy with automatic HTTPS
-- **pytest** - Comprehensive test suite (unit, integration, E2E)
+- **Docker Compose** - Local development environment with all services
+- **pytest** - Comprehensive test suite (unit tests, integration tests, E2E tests)
 
 ## Architecture Overview
 
@@ -40,7 +75,7 @@ The system follows a clean, service-oriented architecture:
 
 ```
 Frontend (React)
-    ↓
+    ↓ WebSocket /ask
 Backend API (FastAPI)
     ├─ News Ingestion Service
     │   ├─ RSS Fetcher (LangChain + newspaper3k)
@@ -54,7 +89,11 @@ PostgreSQL + pgvector
 Ollama (Local LLM)
 ```
 
-For detailed architecture documentation, see [backend/README.md](./backend/README.md).
+**Design Pattern**: Service-oriented architecture with dependency injection for testability. All external dependencies injected via FastAPI's `Depends()` pattern, centralized in `deps.py`.
+
+For detailed technical documentation, see:
+- Backend: [backend/README.md](./backend/README.md)
+- Frontend: [frontend/README.md](./frontend/README.md)
 
 ## Quick Start
 
@@ -68,7 +107,7 @@ For detailed architecture documentation, see [backend/README.md](./backend/READM
 Clone the repository:
 
 ```bash
-git clone git@github.com:vinialbano/crypto-news-agent
+git clone https://github.com/vinialbano/crypto-news-agent.git
 cd crypto-news-agent
 ```
 
@@ -79,14 +118,7 @@ Configure environment variables in `.env`:
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 # Update .env with secure values
-SECRET_KEY=<generated-key>
-FIRST_SUPERUSER_PASSWORD=<strong-password>
 POSTGRES_PASSWORD=<strong-password>
-
-# News source RSS URLs (pre-configured)
-RSS_DL_NEWS=https://www.dlnews.com/arc/outboundfeeds/rss/
-RSS_THE_DEFIANT=https://thedefiant.io/api/feed
-RSS_COINTELEGRAPH=https://cointelegraph.com/rss
 ```
 
 ### 2. Start the Stack
@@ -103,265 +135,230 @@ This will start:
 - **Frontend**: http://localhost:5173
 - **Database**: PostgreSQL with pgvector on port 5432
 - **Ollama**: Local LLM server on port 11434
-- **Adminer**: Database UI on port 8080
 
 ### 3. Access the Application
 
 **Frontend**: Open http://localhost:5173
 
-**API Documentation**: http://localhost:8000/docs
-
-**Default Login**:
-- Email: `admin@example.com` (configurable via `FIRST_SUPERUSER`)
-- Password: Set in `.env` as `FIRST_SUPERUSER_PASSWORD`
-
 ### 4. Ask Questions About Crypto News
 
-Once articles are ingested (happens automatically every 30 minutes, or trigger manually via API), you can:
+Once articles are ingested (happens automatically every 30 minutes, or trigger manually via API):
 
-1. Navigate to the questions page in the frontend
+1. Navigate to the chat page in the frontend
 2. Ask natural language questions like:
    - "What are the latest developments in Bitcoin?"
    - "Tell me about recent Ethereum updates"
    - "What happened with DeFi this week?"
 3. Get streaming AI responses with source citations
 
-## Configuration
+## Key Design Decisions
 
-### Environment Variables
+### 1. FastAPI Template → Radical Simplification
 
-Key configuration options in `.env`:
+**Decision**: Started with FastAPI full-stack template, then removed some thousands of lines of production code.
 
-```bash
-# Security
-SECRET_KEY=changethis                    # Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
-FIRST_SUPERUSER=admin@example.com
-FIRST_SUPERUSER_PASSWORD=changethis
+**Rationale**:
+- Quick start with batteries included (Docker, migrations, testing setup)
+- Template included production complexity not needed for this project
+- Removed: GitHub Actions, Traefik reverse proxy, email services, deployment scripts
 
-# Database
-POSTGRES_SERVER=db
-POSTGRES_USER=app_user
-POSTGRES_PASSWORD=changethis
-POSTGRES_DB=app
+**Trade-off**: Spent time cleaning vs building from scratch, but gained solid foundation.
 
-# Ollama LLM
-OLLAMA_HOST=http://ollama:11434
-OLLAMA_CHAT_MODEL=qwen2.5:latest
-OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+**Result**: Focused codebase for learning while maintaining test infrastructure (pytest, Playwright, coverage).
 
-# News Sources (RSS URLs)
-RSS_DL_NEWS=https://www.dlnews.com/arc/outboundfeeds/rss/
-RSS_THE_DEFIANT=https://thedefiant.io/api/feed
-RSS_COINTELEGRAPH=https://cointelegraph.com/rss
+### 2. Config-Based News Sources (No Database CRUD)
 
-# Ingestion Settings
-INGESTION_INTERVAL_MINUTES=30            # How often to fetch news
-ARTICLE_CLEANUP_DAYS=90                  # Delete articles older than N days
+**Decision**: News sources defined in environment variables, not in database.
 
-# RAG Settings
-RAG_DISTANCE_THRESHOLD=0.5               # Relevance threshold for semantic search
-RAG_TOP_K_ARTICLES=5                     # Number of articles to use as context
-RAG_MAX_CONTEXT_LENGTH=8000              # Max characters in LLM context
+**Rationale**:
+- Simpler: No admin UI needed to manage sources
+- Version controlled: Sources tracked in `.env` file
+- Deployment-friendly: Change sources without database migration
 
-# WebSocket Settings
-WS_MAX_QUESTIONS_PER_MINUTE=10          # Rate limit per client
-WS_TIMEOUT_SECONDS=180                   # Connection timeout
+**Trade-off**: Less dynamic (requires code deploy to add sources), but acceptable for this use case.
+
+**Implementation**: See `backend/app/core/config.py` - `news_sources` computed field.
+
+### 3. PostgreSQL + pgvector (No Separate Vector Database)
+
+**Decision**: Use pgvector extension in PostgreSQL instead of dedicated vector database (Qdrant, Weaviate, Pinecone).
+
+**Rationale**:
+- Single database: Relational data + vectors in one place
+- ACID compliance: Transactions work across all data
+- Familiar tooling: Standard PostgreSQL tools and backups
+- Lower complexity: One fewer service to deploy/manage
+
+**Trade-off**: Fewer vector search features vs specialized DBs, but sufficient for this scale.
+
+**Technical detail**: HNSW index for approximate nearest neighbor search (<0.5 cosine distance threshold).
+
+### 4. WebSocket for Streaming (Not SSE)
+
+**Decision**: WebSocket protocol for question answering instead of Server-Sent Events.
+
+**Rationale**:
+- Bi-directional: Can send metadata and receive responses in same connection
+- Simpler protocol: Less HTTP overhead for streaming
+- Built-in backpressure: Client can control flow
+
+**Implementation**: Rate limiting (10 questions/minute), timeout protection (3 minutes), structured protocol:
+```json
+{"type": "sources", "articles": [...]}
+{"type": "chunk", "content": "Bitcoin..."}
+{"type": "done"}
 ```
 
-### Adding New News Sources
+### 5. Strict Dependency Injection Pattern
 
-To add a new RSS feed:
+**Decision**: ALL dependency factories must live in `backend/app/deps.py`.
 
-1. Add the RSS URL to `.env`:
-   ```bash
-   RSS_NEW_SOURCE=https://newssite.com/rss
-   ```
+**Rationale**:
+- Testability: Easy to mock dependencies in unit tests
+- Consistency: Same dependency graph everywhere (API, scheduler, CLI)
+- Single Responsibility: Services never instantiate their own dependencies
 
-2. Update `backend/app/core/config.py` to include the new source in the `news_sources` computed field
+**Impact**: unit tests using dependency mocking, instead of monkey patching.
 
-3. Restart the backend service
+### 6. LangChain RSSFeedLoader + newspaper3k
+
+**Decision**: Use LangChain's RSSFeedLoader with newspaper3k for full-text extraction.
+
+**Rationale**:
+- LangChain integration: Fits naturally into RAG pipeline
+- Full-text extraction: newspaper3k gets complete article content (not just RSS summary)
+- Mature libraries: Battle-tested for content extraction
+
+**Challenge**: newspaper3k HTML parsing can fail on some sites → Implemented graceful fallback.
+
+### 7. Content Hash Deduplication
+
+**Decision**: SHA-256 hash of (title + URL) with unique database constraint.
+
+**Rationale**:
+- RSS feeds often republish same articles
+- Database-level enforcement prevents duplicates automatically
+- Fast lookup: Hash indexed for O(1) duplicate detection
+
+**Implementation**: See `backend/app/models.py` - `content_hash` field with unique constraint.
+
+## Technical Challenges Solved
+
+### Challenge 1: Ollama Startup Race Condition
+
+**Problem**: Backend starts before Ollama finishes loading models → connection failures.
+
+**Solution**:
+- Health check script with retry logic: `backend/scripts/prestart.sh`
+- Docker healthchecks: Wait for Ollama ready state
+- Graceful degradation: Log errors but continue startup
+
+**Code**: See `backend/app/core/config.py` - Ollama connection with timeout handling.
+
+### Challenge 2: Duplicate Article Detection
+
+**Problem**: RSS feeds republish articles with same content but different publish dates.
+
+**Solution**:
+- Content hash: `SHA-256(title + url)` as unique identifier
+- Database unique constraint: Automatic duplicate rejection
+- Fast lookup: O(1) hash-based duplicate detection
+
+**Result**: Zero duplicate articles in database, even with overlapping RSS feeds.
+
+### Challenge 3: Real-Time Streaming UX
+
+**Problem**: LLM responses take several seconds → need to show progress to user.
+
+**Solution**:
+- WebSocket streaming: Token-by-token response delivery
+- Structured protocol: Send sources first, then stream content, then done signal
+- Frontend handling: Update UI as each token arrives
+
+**UX Impact**: Immediate feedback vs waiting for complete response (2-5 seconds vs 10-15 seconds perceived time).
+
+## Trade-offs & Limitations
+
+### What I Sacrificed for Simplicity
+
+1. **Config-based sources vs Admin UI**
+   - Pro: Simpler code, version controlled
+   - Con: Can't add sources without deployment
+   - Decision: Config is sufficient for 3-5 sources
+
+2. **Local LLM vs Cloud APIs (OpenAI/Anthropic)**
+   - Pro: Zero API costs, complete privacy, learning experience
+   - Con: Slower inference (3-5 sec vs 1-2 sec), requires GPU for best performance
+   - Decision: Acceptable for demo, worth the learning
+
+3. **Single PostgreSQL vs Specialized Vector DB**
+   - Pro: Simpler deployment, familiar tooling, ACID compliance
+   - Con: Fewer vector search features (no filtering, clustering, etc.)
+   - Decision: pgvector sufficient for semantic search needs
+
+4. **Regex-based moderation vs ML model**
+   - Pro: Fast, predictable, no extra dependencies
+   - Con: Can be bypassed with creative spelling
+   - Decision: Good enough for profanity/spam, not production-grade
+
+5. **No authentication on /ask endpoint**
+   - Pro: Simpler demo, faster development
+   - Con: Open to abuse (rate limited per IP only)
+   - Decision: Fine for assessment, would add auth for production
+
+## What I'd Do Differently
+
+### If Starting Over:
+
+1. **Start with simpler template**
+   - FastAPI full-stack was overkill for this project
+   - Would use another template or build from scratch
+   - Saved time on setup, lost time on cleanup
+
+2. **Consider Qdrant/Weaviate for vectors**
+   - pgvector works, but specialized DBs have better features
+   - Filtering, hybrid search, clustering would be useful
+   - Trade-off: One more service to manage
+
+5. **Implement better error boundaries**
+   - Current error handling is basic (try/catch + logging)
+   - Structured errors with retry logic would be more robust
+   - Integration with an observability tool for production monitoring
+
+### Known Limitations:
+
+- **Embedding quality**: nomic-embed-text is good but not SOTA (768-dim vs 1536-dim OpenAI)
+- **No article ranking**: Just cosine distance, no relevance feedback or re-ranking
+- **No conversation memory**: Each question is independent (no follow-ups)
+- **Basic content moderation**: Regex-based, can be bypassed
+- **No caching**: Embeddings generated fresh each time (could cache query embeddings)
 
 ## Development
 
-### Backend Development
+For detailed development instructions, see:
 
-Backend is built with FastAPI + SQLModel + Ollama.
+- **Backend**: [backend/README.md](./backend/README.md) - API development, testing, migrations
+- **Frontend**: [frontend/README.md](./frontend/README.md) - React development, E2E testing, API client generation
 
-**Documentation**: [backend/README.md](./backend/README.md)
-
-**Key directories**:
-- `backend/app/models.py` - Database models
-- `backend/app/routes.py` - API endpoints
-- `backend/app/services/` - Business logic (ingestion, RAG, embeddings)
-- `backend/app/deps.py` - Dependency injection
-- `backend/tests/` - Unit, integration, and E2E tests
-
-**Run tests**:
-```bash
-cd backend
-bash ./scripts/test.sh
-```
-
-### Frontend Development
-
-Frontend is built with React + TypeScript + Chakra UI.
-
-**Documentation**: [frontend/README.md](./frontend/README.md)
-
-**Key directories**:
-- `frontend/src/routes/` - File-based routing (TanStack Router)
-- `frontend/src/components/` - Reusable UI components
-- `frontend/src/client/` - Auto-generated API client (DO NOT EDIT)
-
-**Generate API client** (after backend changes):
-```bash
-./scripts/generate-client.sh
-```
-
-### Docker Compose Development
-
-The `docker-compose.override.yml` file enables hot-reloading for local development:
-- Backend: `fastapi run --reload` auto-restarts on code changes
-- Frontend: Vite HMR provides instant updates
-- Database: Data persists in Docker volume
-
-**View logs**:
-```bash
-docker compose logs -f backend    # Backend logs
-docker compose logs -f frontend   # Frontend logs
-docker compose logs -f ollama     # LLM server logs
-```
-
-**Restart services**:
-```bash
-docker compose restart backend
-docker compose restart frontend
-```
-
-## Services
-
-### Available Services
-
-- **backend** - FastAPI application (port 8000)
-- **frontend** - React application (port 5173)
-- **db** - PostgreSQL with pgvector (port 5432)
-- **ollama** - Local LLM server (port 11434)
-- **adminer** - Database management UI (port 8080)
-- **mailcatcher** - Email testing UI (port 1080)
-- **proxy** - Traefik reverse proxy (port 80, 8090)
-
-### Checking Service Status
+**Quick Commands**:
 
 ```bash
-docker compose ps                  # List all services
-docker compose logs <service>      # View logs
-docker compose exec <service> bash # Enter service container
+# Start all services with hot-reload
+docker compose watch
+
+# View logs
+docker compose logs -f backend
+docker compose logs -f frontend
+
+# Run backend tests
+cd backend && bash scripts/test-all.sh
+
+# Run frontend E2E tests
+cd frontend && npx playwright test
+
+# Generate API client (after backend changes)
+bash scripts/generate-client.sh
 ```
-
-## Testing
-
-### Run All Tests
-
-```bash
-# Backend tests (unit + integration)
-cd backend
-bash ./scripts/test.sh
-
-# Frontend E2E tests
-cd frontend
-npx playwright test
-```
-
-### Test in Running Stack
-
-```bash
-# Backend tests in Docker
-docker compose exec backend bash scripts/tests-start.sh
-
-# Stop on first error
-docker compose exec backend bash scripts/tests-start.sh -x
-
-# Run specific test
-docker compose exec backend pytest tests/unit/test_rag_service.py -v
-```
-
-### Test Coverage
-
-After running tests, view coverage reports:
-- Backend: `backend/htmlcov/index.html`
-- Frontend: `frontend/coverage/index.html`
-
-## API Documentation
-
-FastAPI automatically generates interactive API documentation:
-
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
-Key endpoints:
-- `GET /news/` - List recent articles
-- `POST /news/ingest/` - Trigger manual ingestion
-- `GET /news/sources` - List configured news sources
-- `WebSocket /ask` - Real-time question answering
-
-## Deployment
-
-For production deployment instructions, see [deployment.md](./deployment.md).
-
-Key steps:
-1. Remove `docker-compose.override.yml` (development only)
-2. Set secure `SECRET_KEY`, `POSTGRES_PASSWORD`, and `FIRST_SUPERUSER_PASSWORD`
-3. Configure `SENTRY_DSN` for error tracking (optional)
-4. Use `fastapi run` instead of `fastapi run --reload`
-5. Set up reverse proxy with HTTPS (Traefik included)
-6. Configure backup strategy for PostgreSQL + pgvector data
-
-## Troubleshooting
-
-### Ollama Models Not Found
-
-If you see "model not found" errors:
-
-```bash
-# Check available models
-docker compose exec ollama ollama list
-
-# Pull required models
-docker compose exec ollama ollama pull nomic-embed-text
-docker compose exec ollama ollama pull qwen2.5:latest
-```
-
-### Database Connection Issues
-
-```bash
-# Check database is running
-docker compose ps db
-
-# View database logs
-docker compose logs db
-
-# Connect to database
-docker compose exec db psql -U app_user -d app
-```
-
-### Backend Won't Start
-
-```bash
-# View backend logs
-docker compose logs backend
-
-# Common issues:
-# 1. Check Ollama is running: docker compose ps ollama
-# 2. Check database is healthy: docker compose ps db
-# 3. Verify .env configuration
-# 4. Rebuild if dependencies changed: docker compose build backend
-```
-
-### Frontend Can't Connect to Backend
-
-- Ensure backend is running: `docker compose ps backend`
-- Check backend health: `curl http://localhost:8000/docs`
-- Regenerate API client if backend changed: `./scripts/generate-client.sh`
 
 ## Project Structure
 
@@ -370,51 +367,24 @@ crypto-news-agent/
 ├── backend/              # FastAPI backend
 │   ├── app/
 │   │   ├── main.py      # Application entry point
-│   │   ├── routes.py    # API endpoints
-│   │   ├── models.py    # Database models
-│   │   ├── services/    # Business logic
+│   │   ├── routes.py    # API endpoints (REST + WebSocket)
+│   │   ├── models.py    # Database models (NewsArticle)
+│   │   ├── services/    # Business logic (ingestion, RAG, embeddings)
 │   │   ├── core/        # Configuration & database
 │   │   └── alembic/     # Database migrations
+│   ├── scripts/         # Development & test scripts
 │   ├── tests/           # Unit, integration, E2E tests
 │   └── README.md        # Backend documentation
 ├── frontend/            # React frontend
 │   ├── src/
-│   │   ├── routes/      # Page components
+│   │   ├── routes/      # Page components (TanStack Router)
 │   │   ├── components/  # Reusable UI components
 │   │   └── client/      # Auto-generated API client
 │   └── README.md        # Frontend documentation
-├── docker-compose.yml   # Production Docker config
-├── docker-compose.override.yml  # Development overrides
+├── docker-compose.yml   # Docker services configuration
 ├── .env                 # Environment configuration
 └── README.md           # This file
 ```
-
-## Contributing
-
-When contributing:
-
-1. Follow existing code patterns and architecture
-2. Write tests for new features (unit + integration)
-3. Update documentation for significant changes
-4. Run linters before committing:
-   ```bash
-   # Backend
-   cd backend
-   bash ./scripts/lint.sh
-
-   # Frontend
-   cd frontend
-   npm run lint
-   ```
-5. Ensure all tests pass:
-   ```bash
-   cd backend && bash ./scripts/test.sh
-   cd frontend && npx playwright test
-   ```
-
-## License
-
-The Full Stack FastAPI Template (which this project is based on) is licensed under the terms of the MIT license.
 
 ## Credits
 

@@ -196,7 +196,7 @@ class Settings(BaseSettings):
 
     # Ollama
     OLLAMA_HOST: str = "http://localhost:11434"
-    OLLAMA_CHAT_MODEL: str = "qwen2.5:latest"
+    OLLAMA_CHAT_MODEL: str = "llama3.2:3b"
     OLLAMA_EMBEDDING_MODEL: str = "nomic-embed-text"
 
     # News Sources (environment variables)
@@ -277,7 +277,7 @@ def create_ingestion_service(session: Session) -> IngestionService:
 
 ### RAG Question Answering
 - Semantic search using pgvector embeddings (768-dim nomic-embed-text)
-- LLM response generation via Ollama (qwen2.5)
+- LLM response generation via Ollama (llama3.2:3b)
 - Streaming responses for real-time user experience
 - Source citation in answers
 - Relevance threshold filtering (cosine distance < 0.5)
@@ -315,7 +315,7 @@ def create_ingestion_service(session: Session) -> IngestionService:
 - **langchain-community** - Community tools (RSSFeedLoader)
 - **Ollama** - Local LLM server
   - `nomic-embed-text` - 768-dim embeddings
-  - `qwen2.5:latest` - Chat model for question answering
+  - `llama3.2:3b` - Chat model for question answering
 
 **News Ingestion:**
 - **feedparser** - RSS feed parsing
@@ -673,7 +673,7 @@ If the backend fails to start with Ollama connection errors, ensure:
 4. Pull required models if missing:
    ```bash
    docker compose exec ollama ollama pull nomic-embed-text
-   docker compose exec ollama ollama pull qwen2.5:latest
+   docker compose exec ollama ollama pull llama3.2:3b
    ```
 
 ### Database Migration Errors
@@ -697,7 +697,6 @@ For production deployment:
 1. **Remove development overrides**: Don't use `docker-compose.override.yml`
 2. **Set production settings**:
    - Change `ENVIRONMENT=production` in `.env`
-   - Set strong `SECRET_KEY`
    - Configure `SENTRY_DSN` for error tracking
 3. **Use production command**: Change to `fastapi run` (not `fastapi run --reload`)
 4. **Scale workers**: Use multiple Uvicorn workers for higher throughput

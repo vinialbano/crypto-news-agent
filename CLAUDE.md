@@ -213,17 +213,14 @@ PostgreSQL Database
 ### Configuration Management
 
 **Primary Config**: `.env` at project root
-- Contains secrets (SECRET_KEY, POSTGRES_PASSWORD)
+- Contains secrets (POSTGRES_PASSWORD)
 - Used by both backend and Docker Compose
 - Backend reads via `backend/app/core/config.py`
 - Frontend can use `VITE_*` variables
 
 **Important Variables:**
 - `PROJECT_NAME`: Displayed in UI and API docs
-- `SECRET_KEY`: JWT signing (generate with `python -c "import secrets; print(secrets.token_urlsafe(32))"`)
 - `POSTGRES_PASSWORD`: Database password
-- `FIRST_SUPERUSER`: Admin email
-- `FIRST_SUPERUSER_PASSWORD`: Admin password
 
 ## Development Workflow & Principles
 
