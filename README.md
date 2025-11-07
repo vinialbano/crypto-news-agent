@@ -1,239 +1,428 @@
-# Full Stack FastAPI Template
+# Crypto News Agent
 
-<a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3ATest" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test/badge.svg" alt="Test"></a>
-<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/fastapi/full-stack-fastapi-template" target="_blank"><img src="https://coverage-badge.samuelcolvin.workers.dev/fastapi/full-stack-fastapi-template.svg" alt="Coverage"></a>
+A RAG-powered crypto news aggregator with intelligent question answering using local LLMs. The system automatically ingests news from multiple crypto sources and enables natural language queries about recent developments in the crypto space.
 
-## Technology Stack and Features
+## Features
 
-- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
-    - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for the Python SQL database interactions (ORM).
-    - 🔍 [Pydantic](https://docs.pydantic.dev), used by FastAPI, for the data validation and settings management.
-    - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
-- 🚀 [React](https://react.dev) for the frontend.
-    - 💃 Using TypeScript, hooks, Vite, and other parts of a modern frontend stack.
-    - 🎨 [Chakra UI](https://chakra-ui.com) for the frontend components.
-    - 🤖 An automatically generated frontend client.
-    - 🧪 [Playwright](https://playwright.dev) for End-to-End testing.
-    - 🦇 Dark mode support.
-- 🐋 [Docker Compose](https://www.docker.com) for development and production.
-- 🔒 Secure password hashing by default.
-- 🔑 JWT (JSON Web Token) authentication.
-- 📫 Email based password recovery.
-- ✅ Tests with [Pytest](https://pytest.org).
-- 📞 [Traefik](https://traefik.io) as a reverse proxy / load balancer.
-- 🚢 Deployment instructions using Docker Compose, including how to set up a frontend Traefik proxy to handle automatic HTTPS certificates.
-- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
+- **Automated News Ingestion**: Fetches and processes articles from leading crypto news sources (DL News, The Defiant, Cointelegraph)
+- **RAG Question Answering**: Ask questions about recent crypto news and get AI-powered answers with source citations
+- **Real-Time Streaming**: WebSocket-based streaming responses for immediate feedback
+- **Content Moderation**: Built-in filtering for profanity, spam, and prompt injection attacks
+- **Semantic Search**: Vector-based similarity search powered by pgvector for relevant article retrieval
+- **Automatic Deduplication**: Smart content hashing prevents duplicate articles
+- **Background Jobs**: Scheduled ingestion every 30 minutes and automatic cleanup of old articles
+- **Local LLM**: Runs entirely on Ollama - no external API costs or data sharing
 
-### Dashboard Login
+## Technology Stack
 
-[![API docs](img/login.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### Backend
+- **FastAPI** - Modern async Python web framework
+- **SQLModel** - Type-safe ORM (Pydantic + SQLAlchemy)
+- **PostgreSQL + pgvector** - Database with vector similarity search
+- **Ollama** - Local LLM server (nomic-embed-text for embeddings, qwen2.5 for chat)
+- **LangChain** - Framework for RAG and LLM applications
+- **APScheduler** - Background job scheduling
 
-### Dashboard - Admin
+### Frontend
+- **React + TypeScript** - Modern frontend with hooks and Vite
+- **TanStack Query & Router** - Data fetching and routing
+- **Chakra UI** - Component library with dark mode
+- **Playwright** - End-to-end testing
 
-[![API docs](img/dashboard.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### Infrastructure
+- **Docker Compose** - Development and production deployment
+- **Traefik** - Reverse proxy with automatic HTTPS
+- **pytest** - Comprehensive test suite (unit, integration, E2E)
 
-### Dashboard - Create User
+## Architecture Overview
 
-[![API docs](img/dashboard-create.png)](https://github.com/fastapi/full-stack-fastapi-template)
+The system follows a clean, service-oriented architecture:
 
-### Dashboard - Items
-
-[![API docs](img/dashboard-items.png)](https://github.com/fastapi/full-stack-fastapi-template)
-
-### Dashboard - User Settings
-
-[![API docs](img/dashboard-user-settings.png)](https://github.com/fastapi/full-stack-fastapi-template)
-
-### Dashboard - Dark Mode
-
-[![API docs](img/dashboard-dark.png)](https://github.com/fastapi/full-stack-fastapi-template)
-
-### Interactive API Documentation
-
-[![API docs](img/docs.png)](https://github.com/fastapi/full-stack-fastapi-template)
-
-## How To Use It
-
-You can **just fork or clone** this repository and use it as is.
-
-✨ It just works. ✨
-
-### How to Use a Private Repository
-
-If you want to have a private repository, GitHub won't allow you to simply fork it as it doesn't allow changing the visibility of forks.
-
-But you can do the following:
-
-- Create a new GitHub repo, for example `my-full-stack`.
-- Clone this repository manually, set the name with the name of the project you want to use, for example `my-full-stack`:
-
-```bash
-git clone git@github.com:fastapi/full-stack-fastapi-template.git my-full-stack
+```
+Frontend (React)
+    ↓
+Backend API (FastAPI)
+    ├─ News Ingestion Service
+    │   ├─ RSS Fetcher (LangChain + newspaper3k)
+    │   └─ Article Processor (embeddings + deduplication)
+    ├─ RAG Service
+    │   ├─ Semantic Search (pgvector)
+    │   └─ LLM Response Generation (Ollama)
+    └─ Content Moderation
+    ↓
+PostgreSQL + pgvector
+Ollama (Local LLM)
 ```
 
-- Enter into the new directory:
+For detailed architecture documentation, see [backend/README.md](./backend/README.md).
+
+## Quick Start
+
+### Prerequisites
+
+- [Docker](https://www.docker.com/) and Docker Compose
+- [uv](https://docs.astral.sh/uv/) for Python development (optional, for local development)
+
+### 1. Clone and Configure
+
+Clone the repository:
 
 ```bash
-cd my-full-stack
+git clone git@github.com:vinialbano/crypto-news-agent
+cd crypto-news-agent
 ```
 
-- Set the new origin to your new repository, copy it from the GitHub interface, for example:
+Configure environment variables in `.env`:
 
 ```bash
-git remote set-url origin git@github.com:octocat/my-full-stack.git
-```
-
-- Add this repo as another "remote" to allow you to get updates later:
-
-```bash
-git remote add upstream git@github.com:fastapi/full-stack-fastapi-template.git
-```
-
-- Push the code to your new repository:
-
-```bash
-git push -u origin master
-```
-
-### Update From the Original Template
-
-After cloning the repository, and after doing changes, you might want to get the latest changes from this original template.
-
-- Make sure you added the original repository as a remote, you can check it with:
-
-```bash
-git remote -v
-
-origin    git@github.com:octocat/my-full-stack.git (fetch)
-origin    git@github.com:octocat/my-full-stack.git (push)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (fetch)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (push)
-```
-
-- Pull the latest changes without merging:
-
-```bash
-git pull --no-commit upstream master
-```
-
-This will download the latest changes from this template without committing them, that way you can check everything is right before committing.
-
-- If there are conflicts, solve them in your editor.
-
-- Once you are done, commit the changes:
-
-```bash
-git merge --continue
-```
-
-### Configure
-
-You can then update configs in the `.env` files to customize your configurations.
-
-Before deploying it, make sure you change at least the values for:
-
-- `SECRET_KEY`
-- `FIRST_SUPERUSER_PASSWORD`
-- `POSTGRES_PASSWORD`
-
-You can (and should) pass these as environment variables from secrets.
-
-Read the [deployment.md](./deployment.md) docs for more details.
-
-### Generate Secret Keys
-
-Some environment variables in the `.env` file have a default value of `changethis`.
-
-You have to change them with a secret key, to generate secret keys you can run the following command:
-
-```bash
+# Generate secure keys
 python -c "import secrets; print(secrets.token_urlsafe(32))"
+
+# Update .env with secure values
+SECRET_KEY=<generated-key>
+FIRST_SUPERUSER_PASSWORD=<strong-password>
+POSTGRES_PASSWORD=<strong-password>
+
+# News source RSS URLs (pre-configured)
+RSS_DL_NEWS=https://www.dlnews.com/arc/outboundfeeds/rss/
+RSS_THE_DEFIANT=https://thedefiant.io/api/feed
+RSS_COINTELEGRAPH=https://cointelegraph.com/rss
 ```
 
-Copy the content and use that as password / secret key. And run that again to generate another secure key.
+### 2. Start the Stack
 
-## How To Use It - Alternative With Copier
-
-This repository also supports generating a new project using [Copier](https://copier.readthedocs.io).
-
-It will copy all the files, ask you configuration questions, and update the `.env` files with your answers.
-
-### Install Copier
-
-You can install Copier with:
+Start all services with Docker Compose:
 
 ```bash
-pip install copier
+docker compose watch
 ```
 
-Or better, if you have [`pipx`](https://pipx.pypa.io/), you can run it with:
+This will start:
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **Frontend**: http://localhost:5173
+- **Database**: PostgreSQL with pgvector on port 5432
+- **Ollama**: Local LLM server on port 11434
+- **Adminer**: Database UI on port 8080
+
+### 3. Access the Application
+
+**Frontend**: Open http://localhost:5173
+
+**API Documentation**: http://localhost:8000/docs
+
+**Default Login**:
+- Email: `admin@example.com` (configurable via `FIRST_SUPERUSER`)
+- Password: Set in `.env` as `FIRST_SUPERUSER_PASSWORD`
+
+### 4. Ask Questions About Crypto News
+
+Once articles are ingested (happens automatically every 30 minutes, or trigger manually via API), you can:
+
+1. Navigate to the questions page in the frontend
+2. Ask natural language questions like:
+   - "What are the latest developments in Bitcoin?"
+   - "Tell me about recent Ethereum updates"
+   - "What happened with DeFi this week?"
+3. Get streaming AI responses with source citations
+
+## Configuration
+
+### Environment Variables
+
+Key configuration options in `.env`:
 
 ```bash
-pipx install copier
+# Security
+SECRET_KEY=changethis                    # Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+FIRST_SUPERUSER=admin@example.com
+FIRST_SUPERUSER_PASSWORD=changethis
+
+# Database
+POSTGRES_SERVER=db
+POSTGRES_USER=app_user
+POSTGRES_PASSWORD=changethis
+POSTGRES_DB=app
+
+# Ollama LLM
+OLLAMA_HOST=http://ollama:11434
+OLLAMA_CHAT_MODEL=qwen2.5:latest
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+
+# News Sources (RSS URLs)
+RSS_DL_NEWS=https://www.dlnews.com/arc/outboundfeeds/rss/
+RSS_THE_DEFIANT=https://thedefiant.io/api/feed
+RSS_COINTELEGRAPH=https://cointelegraph.com/rss
+
+# Ingestion Settings
+INGESTION_INTERVAL_MINUTES=30            # How often to fetch news
+ARTICLE_CLEANUP_DAYS=90                  # Delete articles older than N days
+
+# RAG Settings
+RAG_DISTANCE_THRESHOLD=0.5               # Relevance threshold for semantic search
+RAG_TOP_K_ARTICLES=5                     # Number of articles to use as context
+RAG_MAX_CONTEXT_LENGTH=8000              # Max characters in LLM context
+
+# WebSocket Settings
+WS_MAX_QUESTIONS_PER_MINUTE=10          # Rate limit per client
+WS_TIMEOUT_SECONDS=180                   # Connection timeout
 ```
 
-**Note**: If you have `pipx`, installing copier is optional, you could run it directly.
+### Adding New News Sources
 
-### Generate a Project With Copier
+To add a new RSS feed:
 
-Decide a name for your new project's directory, you will use it below. For example, `my-awesome-project`.
+1. Add the RSS URL to `.env`:
+   ```bash
+   RSS_NEW_SOURCE=https://newssite.com/rss
+   ```
 
-Go to the directory that will be the parent of your project, and run the command with your project's name:
+2. Update `backend/app/core/config.py` to include the new source in the `news_sources` computed field
 
-```bash
-copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
-
-If you have `pipx` and you didn't install `copier`, you can run it directly:
-
-```bash
-pipx run copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
-
-**Note** the `--trust` option is necessary to be able to execute a [post-creation script](https://github.com/fastapi/full-stack-fastapi-template/blob/master/.copier/update_dotenv.py) that updates your `.env` files.
-
-### Input Variables
-
-Copier will ask you for some data, you might want to have at hand before generating the project.
-
-But don't worry, you can just update any of that in the `.env` files afterwards.
-
-The input variables, with their default values (some auto generated) are:
-
-- `project_name`: (default: `"FastAPI Project"`) The name of the project, shown to API users (in .env).
-- `stack_name`: (default: `"fastapi-project"`) The name of the stack used for Docker Compose labels and project name (no spaces, no periods) (in .env).
-- `secret_key`: (default: `"changethis"`) The secret key for the project, used for security, stored in .env, you can generate one with the method above.
-- `first_superuser`: (default: `"admin@example.com"`) The email of the first superuser (in .env).
-- `first_superuser_password`: (default: `"changethis"`) The password of the first superuser (in .env).
-- `smtp_host`: (default: "") The SMTP server host to send emails, you can set it later in .env.
-- `smtp_user`: (default: "") The SMTP server user to send emails, you can set it later in .env.
-- `smtp_password`: (default: "") The SMTP server password to send emails, you can set it later in .env.
-- `emails_from_email`: (default: `"info@example.com"`) The email account to send emails from, you can set it later in .env.
-- `postgres_password`: (default: `"changethis"`) The password for the PostgreSQL database, stored in .env, you can generate one with the method above.
-- `sentry_dsn`: (default: "") The DSN for Sentry, if you are using it, you can set it later in .env.
-
-## Backend Development
-
-Backend docs: [backend/README.md](./backend/README.md).
-
-## Frontend Development
-
-Frontend docs: [frontend/README.md](./frontend/README.md).
-
-## Deployment
-
-Deployment docs: [deployment.md](./deployment.md).
+3. Restart the backend service
 
 ## Development
 
-General development docs: [development.md](./development.md).
+### Backend Development
 
-This includes using Docker Compose, custom local domains, `.env` configurations, etc.
+Backend is built with FastAPI + SQLModel + Ollama.
 
-## Release Notes
+**Documentation**: [backend/README.md](./backend/README.md)
 
-Check the file [release-notes.md](./release-notes.md).
+**Key directories**:
+- `backend/app/models.py` - Database models
+- `backend/app/routes.py` - API endpoints
+- `backend/app/services/` - Business logic (ingestion, RAG, embeddings)
+- `backend/app/deps.py` - Dependency injection
+- `backend/tests/` - Unit, integration, and E2E tests
+
+**Run tests**:
+```bash
+cd backend
+bash ./scripts/test.sh
+```
+
+### Frontend Development
+
+Frontend is built with React + TypeScript + Chakra UI.
+
+**Documentation**: [frontend/README.md](./frontend/README.md)
+
+**Key directories**:
+- `frontend/src/routes/` - File-based routing (TanStack Router)
+- `frontend/src/components/` - Reusable UI components
+- `frontend/src/client/` - Auto-generated API client (DO NOT EDIT)
+
+**Generate API client** (after backend changes):
+```bash
+./scripts/generate-client.sh
+```
+
+### Docker Compose Development
+
+The `docker-compose.override.yml` file enables hot-reloading for local development:
+- Backend: `fastapi run --reload` auto-restarts on code changes
+- Frontend: Vite HMR provides instant updates
+- Database: Data persists in Docker volume
+
+**View logs**:
+```bash
+docker compose logs -f backend    # Backend logs
+docker compose logs -f frontend   # Frontend logs
+docker compose logs -f ollama     # LLM server logs
+```
+
+**Restart services**:
+```bash
+docker compose restart backend
+docker compose restart frontend
+```
+
+## Services
+
+### Available Services
+
+- **backend** - FastAPI application (port 8000)
+- **frontend** - React application (port 5173)
+- **db** - PostgreSQL with pgvector (port 5432)
+- **ollama** - Local LLM server (port 11434)
+- **adminer** - Database management UI (port 8080)
+- **mailcatcher** - Email testing UI (port 1080)
+- **proxy** - Traefik reverse proxy (port 80, 8090)
+
+### Checking Service Status
+
+```bash
+docker compose ps                  # List all services
+docker compose logs <service>      # View logs
+docker compose exec <service> bash # Enter service container
+```
+
+## Testing
+
+### Run All Tests
+
+```bash
+# Backend tests (unit + integration)
+cd backend
+bash ./scripts/test.sh
+
+# Frontend E2E tests
+cd frontend
+npx playwright test
+```
+
+### Test in Running Stack
+
+```bash
+# Backend tests in Docker
+docker compose exec backend bash scripts/tests-start.sh
+
+# Stop on first error
+docker compose exec backend bash scripts/tests-start.sh -x
+
+# Run specific test
+docker compose exec backend pytest tests/unit/test_rag_service.py -v
+```
+
+### Test Coverage
+
+After running tests, view coverage reports:
+- Backend: `backend/htmlcov/index.html`
+- Frontend: `frontend/coverage/index.html`
+
+## API Documentation
+
+FastAPI automatically generates interactive API documentation:
+
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+Key endpoints:
+- `GET /news/` - List recent articles
+- `POST /news/ingest/` - Trigger manual ingestion
+- `GET /news/sources` - List configured news sources
+- `WebSocket /ask` - Real-time question answering
+
+## Deployment
+
+For production deployment instructions, see [deployment.md](./deployment.md).
+
+Key steps:
+1. Remove `docker-compose.override.yml` (development only)
+2. Set secure `SECRET_KEY`, `POSTGRES_PASSWORD`, and `FIRST_SUPERUSER_PASSWORD`
+3. Configure `SENTRY_DSN` for error tracking (optional)
+4. Use `fastapi run` instead of `fastapi run --reload`
+5. Set up reverse proxy with HTTPS (Traefik included)
+6. Configure backup strategy for PostgreSQL + pgvector data
+
+## Troubleshooting
+
+### Ollama Models Not Found
+
+If you see "model not found" errors:
+
+```bash
+# Check available models
+docker compose exec ollama ollama list
+
+# Pull required models
+docker compose exec ollama ollama pull nomic-embed-text
+docker compose exec ollama ollama pull qwen2.5:latest
+```
+
+### Database Connection Issues
+
+```bash
+# Check database is running
+docker compose ps db
+
+# View database logs
+docker compose logs db
+
+# Connect to database
+docker compose exec db psql -U app_user -d app
+```
+
+### Backend Won't Start
+
+```bash
+# View backend logs
+docker compose logs backend
+
+# Common issues:
+# 1. Check Ollama is running: docker compose ps ollama
+# 2. Check database is healthy: docker compose ps db
+# 3. Verify .env configuration
+# 4. Rebuild if dependencies changed: docker compose build backend
+```
+
+### Frontend Can't Connect to Backend
+
+- Ensure backend is running: `docker compose ps backend`
+- Check backend health: `curl http://localhost:8000/docs`
+- Regenerate API client if backend changed: `./scripts/generate-client.sh`
+
+## Project Structure
+
+```
+crypto-news-agent/
+├── backend/              # FastAPI backend
+│   ├── app/
+│   │   ├── main.py      # Application entry point
+│   │   ├── routes.py    # API endpoints
+│   │   ├── models.py    # Database models
+│   │   ├── services/    # Business logic
+│   │   ├── core/        # Configuration & database
+│   │   └── alembic/     # Database migrations
+│   ├── tests/           # Unit, integration, E2E tests
+│   └── README.md        # Backend documentation
+├── frontend/            # React frontend
+│   ├── src/
+│   │   ├── routes/      # Page components
+│   │   ├── components/  # Reusable UI components
+│   │   └── client/      # Auto-generated API client
+│   └── README.md        # Frontend documentation
+├── docker-compose.yml   # Production Docker config
+├── docker-compose.override.yml  # Development overrides
+├── .env                 # Environment configuration
+└── README.md           # This file
+```
+
+## Contributing
+
+When contributing:
+
+1. Follow existing code patterns and architecture
+2. Write tests for new features (unit + integration)
+3. Update documentation for significant changes
+4. Run linters before committing:
+   ```bash
+   # Backend
+   cd backend
+   bash ./scripts/lint.sh
+
+   # Frontend
+   cd frontend
+   npm run lint
+   ```
+5. Ensure all tests pass:
+   ```bash
+   cd backend && bash ./scripts/test.sh
+   cd frontend && npx playwright test
+   ```
 
 ## License
 
-The Full Stack FastAPI Template is licensed under the terms of the MIT license.
+The Full Stack FastAPI Template (which this project is based on) is licensed under the terms of the MIT license.
+
+## Credits
+
+Built with:
+- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
+- [React](https://react.dev/) - UI library
+- [Ollama](https://ollama.ai/) - Local LLM server
+- [LangChain](https://www.langchain.com/) - LLM application framework
+- [pgvector](https://github.com/pgvector/pgvector) - Vector similarity search for PostgreSQL
+
+Based on [FastAPI Full Stack Template](https://github.com/fastapi/full-stack-fastapi-template) by Sebastián Ramírez.
