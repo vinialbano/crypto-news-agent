@@ -74,6 +74,16 @@ class Settings(BaseSettings):
     RSS_THE_DEFIANT: str
     RSS_COINTELEGRAPH: str
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def news_sources(self) -> list[dict[str, str]]:
+        """Get configured news sources from environment variables."""
+        return [
+            {"name": "DL News", "rss_url": self.RSS_DL_NEWS},
+            {"name": "The Defiant", "rss_url": self.RSS_THE_DEFIANT},
+            {"name": "Cointelegraph", "rss_url": self.RSS_COINTELEGRAPH},
+        ]
+
     # Ingestion configuration
     INGESTION_INTERVAL_MINUTES: int
     ARTICLE_CLEANUP_DAYS: int = 30

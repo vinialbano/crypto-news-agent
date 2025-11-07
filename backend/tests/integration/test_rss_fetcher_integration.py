@@ -6,7 +6,6 @@ Run with: pytest tests/integration/test_rss_fetcher_integration.py -v -s
 
 import pytest
 
-from app.models import NewsSource
 from app.services.rss_fetcher import RSSFetcher
 
 
@@ -23,12 +22,10 @@ def test_fetch_dl_news(rss_fetcher):
     Note: This test may be skipped if the external RSS feed is
     temporarily unavailable or returns non-XML responses.
     """
-    source = NewsSource(
-        id=999,  # Temporary ID for testing
-        name="DL News (Integration Test)",
-        rss_url="https://www.dlnews.com/arc/outboundfeeds/rss/",
-        is_active=True,
-    )
+    source = {
+        "name": "DL News (Integration Test)",
+        "rss_url": "https://www.dlnews.com/arc/outboundfeeds/rss/",
+    }
 
     articles = rss_fetcher.fetch_feed(source)
 
@@ -55,12 +52,10 @@ def test_fetch_dl_news(rss_fetcher):
 @pytest.mark.integration
 def test_fetch_the_defiant(rss_fetcher):
     """Test fetching from The Defiant RSS feed."""
-    source = NewsSource(
-        id=998,  # Temporary ID for testing
-        name="The Defiant (Integration Test)",
-        rss_url="https://thedefiant.io/api/feed",
-        is_active=True,
-    )
+    source = {
+        "name": "The Defiant (Integration Test)",
+        "rss_url": "https://thedefiant.io/api/feed",
+    }
 
     articles = rss_fetcher.fetch_feed(source)
 
@@ -78,12 +73,10 @@ def test_fetch_the_defiant(rss_fetcher):
 @pytest.mark.integration
 def test_fetch_cointelegraph(rss_fetcher):
     """Test fetching from Cointelegraph RSS feed."""
-    source = NewsSource(
-        id=997,  # Temporary ID for testing
-        name="Cointelegraph (Integration Test)",
-        rss_url="https://cointelegraph.com/rss",
-        is_active=True,
-    )
+    source = {
+        "name": "Cointelegraph (Integration Test)",
+        "rss_url": "https://cointelegraph.com/rss",
+    }
 
     articles = rss_fetcher.fetch_feed(source)
 
@@ -101,12 +94,10 @@ def test_fetch_cointelegraph(rss_fetcher):
 @pytest.mark.integration
 def test_article_content_quality(rss_fetcher):
     """Test that fetched articles have full content, not just summaries."""
-    source = NewsSource(
-        id=996,  # Temporary ID for testing
-        name="Content Quality Test",
-        rss_url="https://www.dlnews.com/arc/outboundfeeds/rss/",
-        is_active=True,
-    )
+    source = {
+        "name": "Content Quality Test",
+        "rss_url": "https://www.dlnews.com/arc/outboundfeeds/rss/",
+    }
 
     # Fetch articles
     articles = rss_fetcher.fetch_feed(source)
@@ -134,12 +125,10 @@ def test_duplicate_prevention(rss_fetcher):
     """
     import time
 
-    source = NewsSource(
-        id=995,  # Temporary ID for testing
-        name="Duplicate Prevention Test",
-        rss_url="https://www.dlnews.com/arc/outboundfeeds/rss/",
-        is_active=True,
-    )
+    source = {
+        "name": "Duplicate Prevention Test",
+        "rss_url": "https://www.dlnews.com/arc/outboundfeeds/rss/",
+    }
 
     # First fetch
     articles1 = rss_fetcher.fetch_feed(source)

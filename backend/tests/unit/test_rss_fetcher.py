@@ -6,7 +6,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from langchain_core.documents import Document
 
-from app.models import NewsSource
 from app.services.rss_fetcher import RSSFetcher
 
 
@@ -17,12 +16,10 @@ def rss_fetcher():
 
 @pytest.fixture
 def mock_news_source():
-    return NewsSource(
-        id=1,
-        name="Test News",
-        rss_url="https://example.com/rss",
-        is_active=True,
-    )
+    return {
+        "name": "Test News",
+        "rss_url": "https://example.com/rss",
+    }
 
 
 class TestRSSFetcher:
@@ -83,7 +80,7 @@ class TestRSSFetcher:
         assert articles[1]["url"] == "https://example.com/article2"
 
         mock_loader_class.assert_called_once_with(
-            urls=[mock_news_source.rss_url],
+            urls=[mock_news_source["rss_url"]],
             continue_on_failure=True,
             nlp=False,
         )

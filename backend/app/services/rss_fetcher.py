@@ -6,7 +6,6 @@ from typing import Any
 
 from langchain_community.document_loaders import RSSFeedLoader
 
-from app.models import NewsSource
 from app.exceptions import RSSFetchError
 
 logger = logging.getLogger(__name__)
@@ -37,25 +36,27 @@ class RSSFetcher:
 
         return None
 
-    def fetch_feed(self, source: NewsSource) -> list[dict[str, Any]]:
+    def fetch_feed(self, source: dict[str, str]) -> list[dict[str, Any]]:
         """Fetch and parse a single RSS feed using LangChain RSSFeedLoader.
 
         Args:
-            source: News source to fetch
+            source: News source dict with 'name' and 'rss_url' keys
 
         Returns:
             List of article dictionaries with 'title', 'url', 'content', and 'published_at' keys
             Returns empty list if fetch fails
         """
         articles = []
+        source_name = source["name"]
+        source_url = source["rss_url"]
 
         try:
-            logger.info(f"Fetching RSS feed from {source.name}: {source.rss_url}")
+            logger.info(f"Fetching RSS feed from {source_name}: {source_url}")
 
             # Use LangChain RSSFeedLoader to fetch and parse articles
             # This will automatically extract full article content using newspaper3k
             loader = RSSFeedLoader(
-                urls=[source.rss_url],
+                urls=[source_url],
                 continue_on_failure=True,  # Don't crash on individual article failures
                 nlp=False,  # Disabled for stability - some sources (Twitter, etc.) cause errors
             )
@@ -64,10 +65,10 @@ class RSSFetcher:
             documents = loader.load()
 
             if not documents:
-                logger.warning(f"No articles loaded from {source.name}")
+                logger.warning(f"No articles loaded from {source_name}")
                 return articles
 
-            logger.info(f"Loaded {len(documents)} articles from {source.name}")
+            logger.info(f"Loaded {len(documents)} articles from {source_name}")
 
             # Process each document
             for doc in documents:
@@ -104,19 +105,19 @@ class RSSFetcher:
                     logger.debug(f"Parsed article: {title} ({len(content)} chars)")
 
                 except Exception as e:
-                    logger.error(f"Error parsing document from {source.name}: {e}")
+                    logger.error(f"Error parsing document from {source_name}: {e}")
                     continue
 
             logger.info(
-                f"Completed parsing {source.name}: {len(articles)} articles extracted"
+                f"Completed parsing {source_name}: {len(articles)} articles extracted"
             )
 
         except Exception as e:
             logger.error(
-                f"Failed to fetch/parse RSS feed from {source.name}: {e}", exc_info=True
+                f"Failed to fetch/parse RSS feed from {source_name}: {e}", exc_info=True
             )
             raise RSSFetchError(
-                f"Failed to fetch RSS feed from {source.name}: {e}"
+                f"Failed to fetch RSS feed from {source_name}: {e}"
             ) from e
 
         return articles

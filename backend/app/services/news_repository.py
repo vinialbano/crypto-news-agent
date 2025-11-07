@@ -1,10 +1,11 @@
 """News feature database operations (repository pattern)."""
 
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlmodel import Session, col, select
 
-from app.models import NewsArticle, NewsSource
+from app.core.config import settings
+from app.models import NewsArticle
 
 
 class NewsRepository:
@@ -14,55 +15,24 @@ class NewsRepository:
         """Initialize repository."""
         self.session = session
 
-    # NewsSource operations
-    def create_news_source(
-        self, *, name: str, rss_url: str, is_active: bool = True
-    ) -> NewsSource:
-        """Create a new news source."""
-        source = NewsSource(name=name, rss_url=rss_url, is_active=is_active)
-        self.session.add(source)
-        self.session.flush()  # Make ID available without committing
-        self.session.refresh(source)
-        return source
+    # NewsSource operations (now config-based)
+    def get_active_news_sources(self) -> list[dict[str, str]]:
+        """Get all configured news sources from settings."""
+        return settings.news_sources
 
-    def get_active_news_sources(self) -> list[NewsSource]:
-        """Get all active news sources."""
-        statement = select(NewsSource).where(NewsSource.is_active == True)
-        return list(self.session.exec(statement).all())
-
-    def get_source_by_id(self, source_id: int) -> NewsSource | None:
-        """Get a news source by ID.
+    def get_source_by_name(self, source_name: str) -> dict[str, str] | None:
+        """Get a news source by name.
 
         Args:
-            source_id: The ID of the source to retrieve
+            source_name: The name of the source to retrieve
 
         Returns:
-            NewsSource if found, None otherwise
+            Source dict if found, None otherwise
         """
-        statement = select(NewsSource).where(NewsSource.id == source_id)
-        return self.session.exec(statement).first()
-
-    def update_ingestion_status(
-        self,
-        *,
-        source_id: int,
-        success: bool,
-        error_message: str | None = None,
-    ) -> None:
-        """Update ingestion status for a news source."""
-        statement = select(NewsSource).where(NewsSource.id == source_id)
-        source = self.session.exec(statement).first()
-
-        if source:
-            if success:
-                source.ingestion_count += 1
-                source.last_ingestion_at = datetime.now(UTC)
-                source.last_error = None
-            else:
-                source.last_error = error_message
-
-            self.session.add(source)
-            self.session.flush()  # Make changes visible for subsequent operations
+        for source in settings.news_sources:
+            if source["name"] == source_name:
+                return source
+        return None
 
     # NewsArticle operations
     def create_news_article(

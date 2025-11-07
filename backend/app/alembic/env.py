@@ -23,7 +23,7 @@ from sqlmodel import SQLModel  # noqa
 from app.core.config import settings  # noqa
 
 # Import all models so Alembic can detect them for autogenerate
-from app.models import NewsArticle, NewsSource  # noqa
+from app.models import NewsArticle  # noqa
 
 target_metadata = SQLModel.metadata
 

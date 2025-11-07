@@ -1,11 +1,10 @@
 """News ingestion service with scheduling support."""
 
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.core.config import settings
 from app.exceptions import RSSFetchError
-from app.models import NewsSource
 from app.services.article_processor import ArticleProcessor
 from app.services.news_repository import NewsRepository
 from app.services.rss_fetcher import RSSFetcher
@@ -30,16 +29,15 @@ class IngestionService:
         self.article_processor = article_processor
         self.repository = repository
 
-    def ingest_source(self, source: "NewsSource | int") -> dict:
+    def ingest_source(self, source_name: str) -> dict:
         """Ingest articles from a single news source.
 
         Args:
-            source: NewsSource object or source ID
+            source_name: Name of the news source to ingest
 
         Returns:
             Dictionary with detailed ingestion statistics: {
                 "source_name": str,
-                "source_id": int,
                 "new_articles": int,
                 "duplicates": int,
                 "errors": int,
@@ -49,25 +47,18 @@ class IngestionService:
             }
 
         Raises:
-            ValueError: If source ID is provided but not found
+            ValueError: If source name is not found in configuration
         """
-        # If source is ID, fetch from repository
-        if isinstance(source, int):
-            source_obj = self.repository.get_source_by_id(source)
-            if source_obj is None:
-                raise ValueError(f"Source with ID {source} not found")
-            source = source_obj
+        # Get source from configuration
+        source = self.repository.get_source_by_name(source_name)
+        if source is None:
+            raise ValueError(f"Source '{source_name}' not found in configuration")
 
-        # Store source info to avoid lazy-loading issues
-        source_name = source.name
-        source_id = source.id
-
-        logger.info(f"Starting ingestion for source: {source_name} (ID: {source_id})")
-        start_time = datetime.now(UTC)
+        logger.info(f"Starting ingestion for source: {source_name}")
+        start_time = datetime.now(timezone.utc)
 
         result = {
             "source_name": source_name,
-            "source_id": source_id,
             "new_articles": 0,
             "duplicates": 0,
             "errors": 0,
@@ -82,15 +73,9 @@ class IngestionService:
 
             if not articles:
                 logger.warning(f"No articles fetched from {source_name}")
-                # Update source ingestion status
-                self.repository.update_ingestion_status(
-                    source_id=source_id,
-                    success=True,
-                    error_message=None,
-                )
                 result["success"] = True
                 result["duration_seconds"] = (
-                    datetime.now(UTC) - start_time
+                    datetime.now(timezone.utc) - start_time
                 ).total_seconds()
                 logger.info(f"Completed {source_name}: No new articles")
                 return result
@@ -106,13 +91,6 @@ class IngestionService:
             result["duplicates"] = processing_stats["duplicate_articles"]
             result["errors"] = processing_stats["errors"]
 
-            # Update source ingestion status
-            self.repository.update_ingestion_status(
-                source_id=source_id,
-                success=True,
-                error_message=None,
-            )
-
             result["success"] = True
             logger.info(
                 f"Completed {source_name}: "
@@ -127,27 +105,13 @@ class IngestionService:
             result["errors"] += 1
             result["error_message"] = error_msg
 
-            # Update source with error
-            self.repository.update_ingestion_status(
-                source_id=source_id,
-                success=False,
-                error_message=error_msg,
-            )
-
         except Exception as e:
             error_msg = f"Unexpected error during ingestion: {e}"
             logger.error(f"{source_name}: {error_msg}", exc_info=True)
             result["errors"] += 1
             result["error_message"] = error_msg
 
-            # Update source with error
-            self.repository.update_ingestion_status(
-                source_id=source_id,
-                success=False,
-                error_message=error_msg,
-            )
-
-        result["duration_seconds"] = (datetime.now(UTC) - start_time).total_seconds()
+        result["duration_seconds"] = (datetime.now(timezone.utc) - start_time).total_seconds()
         return result
 
     def ingest_all_sources(self) -> dict:
@@ -166,7 +130,7 @@ class IngestionService:
             }
         """
         logger.info("Starting news ingestion for all active sources")
-        start_time = datetime.now(UTC)
+        start_time = datetime.now(timezone.utc)
 
         # Get all active sources
         sources = self.repository.get_active_news_sources()
@@ -198,7 +162,8 @@ class IngestionService:
 
         # Process each source
         for source in sources:
-            result = self.ingest_source(source)
+            source_name = source["name"]
+            result = self.ingest_source(source_name)
             source_results.append(result)
 
             # Aggregate statistics
@@ -211,7 +176,7 @@ class IngestionService:
             else:
                 total_stats["sources_failed"] += 1
 
-        duration = (datetime.now(UTC) - start_time).total_seconds()
+        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
         total_stats["duration_seconds"] = duration
         total_stats["source_results"] = source_results
 
@@ -232,7 +197,7 @@ class IngestionService:
             days = settings.ARTICLE_CLEANUP_DAYS
 
         logger.info(f"Cleaning up articles older than {days} days")
-        cutoff_date = datetime.now(UTC) - timedelta(days=days)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         deleted_count = self.repository.delete_old_articles(cutoff_date)
 

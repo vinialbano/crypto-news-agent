@@ -4,13 +4,13 @@ import asyncio
 import json
 import logging
 from collections import defaultdict
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from pydantic import BaseModel
 
 from app.core.config import settings
-from app.schemas import NewsListResponse
 from app.deps import (
     ContentModerationDep,
     IngestionServiceDep,
@@ -19,6 +19,29 @@ from app.deps import (
     SessionDep,
 )
 from app.exceptions import InvalidQuestionError
+
+
+class NewsArticlePublic(BaseModel):
+    """Public schema for news article API responses."""
+
+    id: int
+    title: str
+    url: str
+    source_name: str
+    published_at: datetime | None
+    ingested_at: datetime
+    content: str  # Full article content for display
+    # Note: embedding not exposed in public API
+
+    model_config = {"from_attributes": True}
+
+
+class NewsListResponse(BaseModel):
+    """Response model for news article list endpoint."""
+
+    articles: list[NewsArticlePublic]
+    count: int
+
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +61,7 @@ def _check_rate_limit(client_id: str) -> bool:
     Returns:
         True if within rate limit, False if exceeded
     """
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     cutoff = now - timedelta(minutes=1)
 
     # Clean up old timestamps
@@ -47,7 +70,10 @@ def _check_rate_limit(client_id: str) -> bool:
     ]
 
     # Check rate limit
-    if len(_rate_limit_tracker[client_id]) >= settings.WEBSOCKET_MAX_QUESTIONS_PER_MINUTE:
+    if (
+        len(_rate_limit_tracker[client_id])
+        >= settings.WEBSOCKET_MAX_QUESTIONS_PER_MINUTE
+    ):
         return False
 
     # Add current timestamp
@@ -73,25 +99,25 @@ def get_news_articles(
 def trigger_manual_ingestion(
     service: IngestionServiceDep,
     session: SessionDep,
-    source_id: int | None = None,
+    source_name: str | None = None,
 ) -> Any:
     """Manually trigger news ingestion.
 
     Args:
-        source_id: Optional source ID. If provided, ingests only that source.
-                   If omitted, ingests all active sources.
+        source_name: Optional source name. If provided, ingests only that source.
+                     If omitted, ingests all active sources.
 
     Returns:
         Success response with ingestion statistics
 
     Raises:
-        HTTPException: 404 if source_id not found, 500 if ingestion fails
+        HTTPException: 404 if source_name not found, 500 if ingestion fails
     """
     try:
-        if source_id is not None:
+        if source_name is not None:
             # Single source ingestion
             try:
-                stats = service.ingest_source(source_id)
+                stats = service.ingest_source(source_name)
             except ValueError as ve:
                 # Source not found
                 raise HTTPException(status_code=404, detail=str(ve)) from ve
@@ -164,7 +190,11 @@ async def ask_question_websocket(
     await websocket.accept()
 
     # Generate client ID from websocket client (use IP if available)
-    client_id = f"{websocket.client.host}:{websocket.client.port}" if websocket.client else id(websocket)
+    client_id = (
+        f"{websocket.client.host}:{websocket.client.port}"
+        if websocket.client
+        else id(websocket)
+    )
     logger.info(f"WebSocket connection established: {client_id}")
 
     try:

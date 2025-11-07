@@ -7,21 +7,6 @@ from pgvector.sqlalchemy import Vector
 from sqlmodel import Column, Field, SQLModel
 
 
-class NewsSource(SQLModel, table=True):
-    """News source (RSS feed) model."""
-
-    __tablename__ = "news_sources"
-
-    id: int | None = Field(default=None, primary_key=True)
-    name: str = Field(max_length=100, unique=True, index=True)
-    rss_url: str = Field(max_length=2048, unique=True)
-    is_active: bool = Field(default=True, index=True)
-    last_ingestion_at: datetime | None = None
-    last_error: str | None = Field(default=None, max_length=1000)
-    ingestion_count: int = Field(default=0)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-
 class NewsArticle(SQLModel, table=True):
     """News article with vector embedding for semantic search."""
 

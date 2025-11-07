@@ -21,15 +21,6 @@ def db_session():
         yield session
 
 
-@pytest.fixture(scope="module", autouse=True)
-def seed_news_sources_fixture():
-    """Seed news sources for all API news tests."""
-    from app.scripts.seed_sources import seed_news_sources
-
-    # Seed sources (uses its own session)
-    seed_news_sources()
-
-
 @pytest.mark.integration
 def test_get_news_articles_success(client):
     """Test GET /news/ returns articles."""
@@ -91,11 +82,8 @@ def test_get_news_sources_success(client):
 
     if data["sources"]:
         source = data["sources"][0]
-        assert "id" in source
         assert "name" in source
         assert "rss_url" in source
-        assert "is_active" in source
-        assert "ingestion_count" in source
 
 
 @pytest.mark.integration
@@ -149,7 +137,7 @@ def test_post_admin_ingest_all_sources_success(client):
 @pytest.mark.integration
 @pytest.mark.slow
 def test_post_admin_ingest_single_source_success(client):
-    """Test POST /news/ingest/ with source_id parameter.
+    """Test POST /news/ingest/ with source_name parameter.
 
     Note: This test is marked as slow because it actually fetches RSS feeds.
     """
@@ -159,12 +147,12 @@ def test_post_admin_ingest_single_source_success(client):
     sources = sources_response.json()["sources"]
     assert len(sources) > 0, "No sources available for testing"
 
-    # Get first source ID
-    source_id = sources[0]["id"]
+    # Get first source name
+    source_name = sources[0]["name"]
 
     # Ingest single source
     response = client.post(
-        "/news/ingest/", params={"source_id": source_id}, timeout=300
+        "/news/ingest/", params={"source_name": source_name}, timeout=300
     )
 
     assert response.status_code == 200
@@ -178,8 +166,7 @@ def test_post_admin_ingest_single_source_success(client):
     stats = data["stats"]
     # Single-source stats structure
     assert "source_name" in stats
-    assert "source_id" in stats
-    assert stats["source_id"] == source_id
+    assert stats["source_name"] == source_name
     assert "new_articles" in stats
     assert "duplicates" in stats
     assert "errors" in stats
@@ -188,9 +175,9 @@ def test_post_admin_ingest_single_source_success(client):
 
 
 @pytest.mark.integration
-def test_post_admin_ingest_invalid_source_id(client):
-    """Test POST /news/ingest/ with invalid source_id returns 404."""
-    response = client.post("/news/ingest/", params={"source_id": 999999})
+def test_post_admin_ingest_invalid_source_name(client):
+    """Test POST /news/ingest/ with invalid source_name returns 404."""
+    response = client.post("/news/ingest/", params={"source_name": "Invalid Source"})
 
     assert response.status_code == 404
     data = response.json()
