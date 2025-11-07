@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, Mock
 import numpy as np
 import pytest
 
-from app.shared.embeddings import EmbeddingsService
+from app.services.embeddings import EmbeddingsService
 
 
 @pytest.fixture
@@ -115,7 +115,7 @@ async def test_embed_query_async(embeddings_service, mock_ollama_embeddings):
 def test_embeddings_service_connection_error(
     embeddings_service, mock_ollama_embeddings
 ):
-    from app.shared.exceptions import EmbeddingGenerationError
+    from app.exceptions import EmbeddingGenerationError
 
     mock_ollama_embeddings.embed_query.side_effect = ConnectionError(
         "Ollama service unavailable"

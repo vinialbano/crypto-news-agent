@@ -4,11 +4,11 @@ import logging
 from datetime import UTC, datetime, timedelta
 
 from app.core.config import settings
-from app.features.news.article_processor import ArticleProcessor
-from app.features.news.models import NewsSource
-from app.features.news.repository import NewsRepository
-from app.features.news.rss_fetcher import RSSFetcher
-from app.shared.exceptions import RSSFetchError
+from app.exceptions import RSSFetchError
+from app.models import NewsSource
+from app.services.article_processor import ArticleProcessor
+from app.services.news_repository import NewsRepository
+from app.services.rss_fetcher import RSSFetcher
 
 logger = logging.getLogger(__name__)
 

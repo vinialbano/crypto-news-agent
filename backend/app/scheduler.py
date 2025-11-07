@@ -9,7 +9,7 @@ from sqlmodel import Session
 
 from app.core.config import settings
 from app.core.db import engine
-from app.shared.deps import create_ingestion_service
+from app.deps import create_ingestion_service
 
 logger = logging.getLogger(__name__)
 

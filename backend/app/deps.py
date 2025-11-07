@@ -16,13 +16,13 @@ from sqlmodel import Session
 
 from app.core.config import settings
 from app.core.db import engine
-from app.features.news.article_processor import ArticleProcessor
-from app.features.news.ingestion_service import IngestionService
-from app.features.news.repository import NewsRepository
-from app.features.news.rss_fetcher import RSSFetcher
-from app.features.questions.rag_service import RAGService
-from app.shared.content_moderation import ContentModerationService
-from app.shared.embeddings import EmbeddingsService
+from app.services.article_processor import ArticleProcessor
+from app.services.content_moderation import ContentModerationService
+from app.services.embeddings import EmbeddingsService
+from app.services.ingestion import IngestionService
+from app.services.news_repository import NewsRepository
+from app.services.rag import RAGService
+from app.services.rss_fetcher import RSSFetcher
 
 # ===========================
 # Core Dependencies

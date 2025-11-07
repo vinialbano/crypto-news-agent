@@ -3,7 +3,7 @@
 import re
 from typing import NamedTuple
 
-from app.shared.exceptions import InvalidQuestionError
+from app.exceptions import InvalidQuestionError
 
 
 class ModerationResult(NamedTuple):

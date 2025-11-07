@@ -7,9 +7,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
 
 from app.core.config import settings
-from app.features.news.repository import NewsRepository
-from app.shared.embeddings import EmbeddingsService
-from app.shared.exceptions import InsufficientContextError, RAGError
+from app.services.news_repository import NewsRepository
+from app.services.embeddings import EmbeddingsService
+from app.exceptions import InsufficientContextError, RAGError
 
 logger = logging.getLogger(__name__)
 

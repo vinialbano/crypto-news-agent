@@ -4,7 +4,7 @@ import pytest
 from sqlmodel import Session, select
 
 from app.core.config import settings
-from app.features.news.models import NewsSource
+from app.models import NewsSource
 
 
 @pytest.fixture
@@ -29,7 +29,7 @@ def clean_news_sources(session: Session):
 def test_seed_sources_creates_sources(session: Session, clean_news_sources):
     """Test that seeding creates all configured sources."""
     # Import and run seeding function
-    from scripts.seed_sources import seed_news_sources
+    from app.scripts.seed_sources import seed_news_sources
 
     seed_news_sources(session)
 
@@ -61,7 +61,7 @@ def test_seed_sources_creates_sources(session: Session, clean_news_sources):
 @pytest.mark.integration
 def test_seed_sources_is_idempotent(session: Session, clean_news_sources):
     """Test that seeding can be run multiple times safely (idempotent)."""
-    from scripts.seed_sources import seed_news_sources
+    from app.scripts.seed_sources import seed_news_sources
 
     # Run seeding twice
     seed_news_sources(session)
@@ -79,7 +79,7 @@ def test_seed_sources_is_idempotent(session: Session, clean_news_sources):
 @pytest.mark.integration
 def test_seed_sources_updates_existing(session: Session, clean_news_sources):
     """Test that seeding updates existing sources if RSS URL changes."""
-    from scripts.seed_sources import seed_news_sources
+    from app.scripts.seed_sources import seed_news_sources
 
     # First seeding
     seed_news_sources()
@@ -111,7 +111,7 @@ def test_seed_sources_updates_existing(session: Session, clean_news_sources):
 @pytest.mark.integration
 def test_seed_sources_preserves_metadata(session: Session, clean_news_sources):
     """Test that seeding preserves existing metadata."""
-    from scripts.seed_sources import seed_news_sources
+    from app.scripts.seed_sources import seed_news_sources
     from datetime import UTC, datetime
 
     # First seeding
@@ -146,7 +146,7 @@ def test_seed_sources_preserves_metadata(session: Session, clean_news_sources):
 @pytest.mark.integration
 def test_seed_sources_all_active(session: Session, clean_news_sources):
     """Test that all seeded sources are active by default."""
-    from scripts.seed_sources import seed_news_sources
+    from app.scripts.seed_sources import seed_news_sources
 
     seed_news_sources()
 
@@ -158,7 +158,7 @@ def test_seed_sources_all_active(session: Session, clean_news_sources):
 @pytest.mark.integration
 def test_seed_sources_unique_constraints(session: Session, clean_news_sources):
     """Test that seeding respects unique constraints."""
-    from scripts.seed_sources import seed_news_sources
+    from app.scripts.seed_sources import seed_news_sources
 
     seed_news_sources()
 
@@ -177,7 +177,7 @@ def test_seed_sources_unique_constraints(session: Session, clean_news_sources):
 @pytest.mark.integration
 def test_seed_sources_with_deactivated_source(session: Session, clean_news_sources):
     """Test seeding behavior when a source was manually deactivated."""
-    from scripts.seed_sources import seed_news_sources
+    from app.scripts.seed_sources import seed_news_sources
 
     # First seeding
     seed_news_sources()

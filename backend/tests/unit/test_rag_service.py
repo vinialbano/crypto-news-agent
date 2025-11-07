@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.features.news.models import NewsArticle
-from app.features.questions.rag_service import RAGService
+from app.models import NewsArticle
+from app.services.rag import RAGService
 
 
 @pytest.fixture
@@ -165,7 +165,7 @@ class TestRAGService:
     async def test_stream_answer_exception_handling(self, rag_service):
         """Test answer streaming handles exceptions."""
         import pytest
-        from app.shared.exceptions import RAGError
+        from app.exceptions import RAGError
 
         # Setup mocks to raise exception
         rag_service.repository.semantic_search.side_effect = Exception("Database error")

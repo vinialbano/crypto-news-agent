@@ -4,7 +4,7 @@ set -e
 set -x
 
 # Let the DB start
-python app/backend_pre_start.py
+python app/scripts/backend_pre_start.py
 
 # Check Ollama connectivity
 echo "Checking Ollama connectivity..."
@@ -14,4 +14,4 @@ python -m app.shared.check_ollama
 alembic upgrade head
 
 # Seed news sources
-python scripts/seed_sources.py
+python app/scripts/seed_sources.py

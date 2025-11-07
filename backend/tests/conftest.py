@@ -9,8 +9,8 @@ from sqlmodel import Session
 
 from app.core.db import engine
 from app.main import app
-from app.shared.deps import get_embeddings_service_dep
-from app.shared.embeddings import EmbeddingsService
+from app.deps import get_embeddings_service_dep
+from app.services.embeddings import EmbeddingsService
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -94,7 +94,7 @@ def create_article(session: Session):
     """
     from datetime import UTC, datetime
 
-    from app.features.news.repository import NewsRepository
+    from app.services.news_repository import NewsRepository
 
     def _create_article(
         title: str = "Test Bitcoin Article",

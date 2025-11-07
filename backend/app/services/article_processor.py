@@ -3,10 +3,10 @@
 import logging
 from datetime import datetime
 
-from app.features.news.models import NewsArticle
-from app.features.news.repository import NewsRepository
-from app.shared.embeddings import EmbeddingsService
-from app.shared.exceptions import ArticleProcessingError, DuplicateArticleError
+from app.exceptions import ArticleProcessingError, DuplicateArticleError
+from app.models import NewsArticle
+from app.services.embeddings import EmbeddingsService
+from app.services.news_repository import NewsRepository
 
 logger = logging.getLogger(__name__)
 

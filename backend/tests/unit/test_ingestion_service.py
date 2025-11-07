@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.features.news.ingestion_service import IngestionService
-from app.features.news.models import NewsSource
+from app.services.ingestion import IngestionService
+from app.models import NewsSource
 
 
 @pytest.fixture

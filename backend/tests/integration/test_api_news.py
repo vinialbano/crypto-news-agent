@@ -24,7 +24,7 @@ def db_session():
 @pytest.fixture(scope="module", autouse=True)
 def seed_news_sources_fixture():
     """Seed news sources for all API news tests."""
-    from scripts.seed_sources import seed_news_sources
+    from app.scripts.seed_sources import seed_news_sources
 
     # Seed sources (uses its own session)
     seed_news_sources()
@@ -32,8 +32,8 @@ def seed_news_sources_fixture():
 
 @pytest.mark.integration
 def test_get_news_articles_success(client):
-    """Test GET /api/v1/news/ returns articles."""
-    response = client.get("/api/v1/news/", params={"limit": 10})
+    """Test GET /news/ returns articles."""
+    response = client.get("/news/", params={"limit": 10})
 
     assert response.status_code == 200
     data = response.json()
@@ -55,8 +55,8 @@ def test_get_news_articles_success(client):
 
 @pytest.mark.integration
 def test_get_news_articles_with_limit(client):
-    """Test GET /api/v1/news/ respects limit parameter."""
-    response = client.get("/api/v1/news/", params={"limit": 5})
+    """Test GET /news/ respects limit parameter."""
+    response = client.get("/news/", params={"limit": 5})
 
     assert response.status_code == 200
     data = response.json()
@@ -66,8 +66,8 @@ def test_get_news_articles_with_limit(client):
 
 @pytest.mark.integration
 def test_get_news_articles_default_limit(client):
-    """Test GET /api/v1/news/ uses default limit."""
-    response = client.get("/api/v1/news/")
+    """Test GET /news/ uses default limit."""
+    response = client.get("/news/")
 
     assert response.status_code == 200
     data = response.json()
@@ -78,8 +78,8 @@ def test_get_news_articles_default_limit(client):
 
 @pytest.mark.integration
 def test_get_news_sources_success(client):
-    """Test GET /api/v1/news/sources returns sources."""
-    response = client.get("/api/v1/news/sources")
+    """Test GET /news/sources returns sources."""
+    response = client.get("/news/sources")
 
     assert response.status_code == 200
     data = response.json()
@@ -101,7 +101,7 @@ def test_get_news_sources_success(client):
 @pytest.mark.integration
 def test_get_news_sources_shows_active_sources(client, db_session):
     """Test that active sources are listed."""
-    response = client.get("/api/v1/news/sources")
+    response = client.get("/news/sources")
 
     assert response.status_code == 200
     data = response.json()
@@ -117,11 +117,11 @@ def test_get_news_sources_shows_active_sources(client, db_session):
 @pytest.mark.integration
 @pytest.mark.slow
 def test_post_admin_ingest_all_sources_success(client):
-    """Test POST /api/v1/news/admin/ingest triggers ingestion for all sources.
+    """Test POST /news/ingest/ triggers ingestion for all sources.
 
     Note: This test is marked as slow because it actually fetches RSS feeds.
     """
-    response = client.post("/api/v1/news/admin/ingest", timeout=300)
+    response = client.post("/news/ingest/", timeout=300)
 
     assert response.status_code == 200
     data = response.json()
@@ -149,12 +149,12 @@ def test_post_admin_ingest_all_sources_success(client):
 @pytest.mark.integration
 @pytest.mark.slow
 def test_post_admin_ingest_single_source_success(client):
-    """Test POST /api/v1/news/admin/ingest with source_id parameter.
+    """Test POST /news/ingest/ with source_id parameter.
 
     Note: This test is marked as slow because it actually fetches RSS feeds.
     """
     # First, get available sources
-    sources_response = client.get("/api/v1/news/sources")
+    sources_response = client.get("/news/sources")
     assert sources_response.status_code == 200
     sources = sources_response.json()["sources"]
     assert len(sources) > 0, "No sources available for testing"
@@ -164,7 +164,7 @@ def test_post_admin_ingest_single_source_success(client):
 
     # Ingest single source
     response = client.post(
-        "/api/v1/news/admin/ingest", params={"source_id": source_id}, timeout=300
+        "/news/ingest/", params={"source_id": source_id}, timeout=300
     )
 
     assert response.status_code == 200
@@ -189,8 +189,8 @@ def test_post_admin_ingest_single_source_success(client):
 
 @pytest.mark.integration
 def test_post_admin_ingest_invalid_source_id(client):
-    """Test POST /api/v1/news/admin/ingest with invalid source_id returns 404."""
-    response = client.post("/api/v1/news/admin/ingest", params={"source_id": 999999})
+    """Test POST /news/ingest/ with invalid source_id returns 404."""
+    response = client.post("/news/ingest/", params={"source_id": 999999})
 
     assert response.status_code == 404
     data = response.json()
@@ -201,7 +201,7 @@ def test_post_admin_ingest_invalid_source_id(client):
 @pytest.mark.integration
 def test_get_news_articles_returns_full_content(client):
     """Test that articles include full content, not summaries."""
-    response = client.get("/api/v1/news/", params={"limit": 1})
+    response = client.get("/news/", params={"limit": 1})
 
     assert response.status_code == 200
     data = response.json()
@@ -217,7 +217,7 @@ def test_get_news_articles_returns_full_content(client):
 @pytest.mark.integration
 def test_news_api_cors_headers(client):
     """Test that CORS headers are set correctly."""
-    response = client.get("/api/v1/news/", headers={"Origin": "http://localhost:5173"})
+    response = client.get("/news/", headers={"Origin": "http://localhost:5173"})
 
     # CORS headers should be present
     assert (
@@ -228,7 +228,7 @@ def test_news_api_cors_headers(client):
 @pytest.mark.integration
 def test_news_api_ordering(client):
     """Test that articles are ordered by ingestion date (newest first)."""
-    response = client.get("/api/v1/news/", params={"limit": 10})
+    response = client.get("/news/", params={"limit": 10})
 
     assert response.status_code == 200
     data = response.json()

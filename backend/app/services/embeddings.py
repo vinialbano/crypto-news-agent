@@ -4,7 +4,7 @@ import logging
 
 from langchain_ollama import OllamaEmbeddings
 
-from app.shared.exceptions import EmbeddingGenerationError
+from app.exceptions import EmbeddingGenerationError
 
 logger = logging.getLogger(__name__)
 

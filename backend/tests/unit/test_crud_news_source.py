@@ -5,7 +5,7 @@ import pytest
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from app.features.news.repository import NewsRepository
+from app.services.news_repository import NewsRepository
 
 
 @pytest.fixture(name="session")

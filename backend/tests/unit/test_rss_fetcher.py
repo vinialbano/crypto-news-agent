@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from langchain_core.documents import Document
 
-from app.features.news.models import NewsSource
-from app.features.news.rss_fetcher import RSSFetcher
+from app.models import NewsSource
+from app.services.rss_fetcher import RSSFetcher
 
 
 @pytest.fixture
@@ -48,7 +48,7 @@ class TestRSSFetcher:
 
         assert result is None
 
-    @patch("app.features.news.rss_fetcher.RSSFeedLoader")
+    @patch("app.services.rss_fetcher.RSSFeedLoader")
     def test_fetch_feed_success(self, mock_loader_class, rss_fetcher, mock_news_source):
         mock_docs = [
             Document(
@@ -88,7 +88,7 @@ class TestRSSFetcher:
             nlp=False,
         )
 
-    @patch("app.features.news.rss_fetcher.RSSFeedLoader")
+    @patch("app.services.rss_fetcher.RSSFeedLoader")
     def test_fetch_feed_short_content_skipped(
         self, mock_loader_class, rss_fetcher, mock_news_source
     ):
@@ -110,7 +110,7 @@ class TestRSSFetcher:
 
         assert len(articles) == 0
 
-    @patch("app.features.news.rss_fetcher.RSSFeedLoader")
+    @patch("app.services.rss_fetcher.RSSFeedLoader")
     def test_fetch_feed_missing_metadata(
         self, mock_loader_class, rss_fetcher, mock_news_source
     ):
@@ -139,12 +139,12 @@ class TestRSSFetcher:
 
         assert len(articles) == 0
 
-    @patch("app.features.news.rss_fetcher.RSSFeedLoader")
+    @patch("app.services.rss_fetcher.RSSFeedLoader")
     def test_fetch_feed_loader_exception(
         self, mock_loader_class, rss_fetcher, mock_news_source
     ):
         import pytest
-        from app.shared.exceptions import RSSFetchError
+        from app.exceptions import RSSFetchError
 
         mock_loader = MagicMock()
         mock_loader.load.side_effect = Exception("Network error")
@@ -153,7 +153,7 @@ class TestRSSFetcher:
         with pytest.raises(RSSFetchError, match="Failed to fetch RSS feed"):
             rss_fetcher.fetch_feed(mock_news_source)
 
-    @patch("app.features.news.rss_fetcher.RSSFeedLoader")
+    @patch("app.services.rss_fetcher.RSSFeedLoader")
     def test_fetch_feed_empty_results(
         self, mock_loader_class, rss_fetcher, mock_news_source
     ):

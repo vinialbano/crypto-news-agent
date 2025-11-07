@@ -6,8 +6,8 @@ Run with: pytest tests/integration/test_rss_fetcher_integration.py -v -s
 
 import pytest
 
-from app.features.news.models import NewsSource
-from app.features.news.rss_fetcher import RSSFetcher
+from app.models import NewsSource
+from app.services.rss_fetcher import RSSFetcher
 
 
 @pytest.fixture(scope="module")

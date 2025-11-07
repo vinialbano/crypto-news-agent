@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 from sqlmodel import Session, col, select
 
-from app.features.news.models import NewsArticle, NewsSource
+from app.models import NewsArticle, NewsSource
 
 
 class NewsRepository:

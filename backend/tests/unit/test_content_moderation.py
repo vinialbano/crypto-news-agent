@@ -2,8 +2,8 @@
 
 import pytest
 
-from app.shared.content_moderation import ContentModerationService, ModerationResult
-from app.shared.exceptions import InvalidQuestionError
+from app.services.content_moderation import ContentModerationService, ModerationResult
+from app.exceptions import InvalidQuestionError
 
 
 @pytest.fixture

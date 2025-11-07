@@ -1,4 +1,4 @@
-"""News API response schemas (pure Pydantic models for HTTP layer)."""
+"""API response schemas (pure Pydantic models for HTTP layer)."""
 
 from datetime import datetime
 

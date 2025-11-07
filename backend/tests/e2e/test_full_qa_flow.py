@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
 from app.core.db import engine
-from app.features.news.models import NewsArticle
+from app.models import NewsArticle
 from app.main import app
 
 
@@ -38,7 +38,7 @@ def test_complete_qa_flow(client, seed_test_articles):
     print(f"\nUsing {len(seed_test_articles)} test articles")
 
     # Step 2: Ask a question about crypto news
-    with client.websocket_connect("/api/v1/questions/ws/ask") as websocket:
+    with client.websocket_connect("/ask") as websocket:
         question = "What are the latest developments in cryptocurrency?"
         print(f"Asking: {question}")
 
@@ -109,7 +109,7 @@ def test_complete_qa_flow(client, seed_test_articles):
 @pytest.mark.e2e
 def test_qa_with_specific_topic(client):
     """Test Q&A about a specific crypto topic."""
-    with client.websocket_connect("/api/v1/questions/ws/ask") as websocket:
+    with client.websocket_connect("/ask") as websocket:
         # Ask about a specific topic likely to be in news
         websocket.send_json({"question": "What happened with Bitcoin price recently?"})
 
@@ -144,7 +144,7 @@ def test_qa_flow_with_multiple_questions(client):
     ]
 
     for question in questions:
-        with client.websocket_connect("/api/v1/questions/ws/ask") as websocket:
+        with client.websocket_connect("/ask") as websocket:
             websocket.send_json({"question": question})
 
             # Receive all messages

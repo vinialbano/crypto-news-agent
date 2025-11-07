@@ -6,8 +6,8 @@ from typing import Any
 
 from langchain_community.document_loaders import RSSFeedLoader
 
-from app.features.news.models import NewsSource
-from app.shared.exceptions import RSSFetchError
+from app.models import NewsSource
+from app.exceptions import RSSFetchError
 
 logger = logging.getLogger(__name__)
 
