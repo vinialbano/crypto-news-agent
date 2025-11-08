@@ -19,7 +19,7 @@ The frontend is built with [Vite](https://vitejs.dev/), [React](https://reactjs.
 
 Before you begin, ensure that you have either the Node Version Manager (nvm) or Fast Node Manager (fnm) installed on your system.
 
-* To install fnm follow the [official fnm guide](https://github.com/Schniz/fnm#installation). If you prefer nvm, you can install it using the [official nvm guide](https://github.com/nvm-sh/nvm#installing-and-updating).
+- To install fnm follow the [official fnm guide](https://github.com/Schniz/fnm#installation). If you prefer nvm, you can install it using the [official nvm guide](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ### Setup
 
@@ -128,15 +128,45 @@ frontend/src/
 │   └── useWebSocket.ts  # WebSocket connection hook
 ├── routes/          # File-based routing (TanStack Router)
 │   └── _layout/     # Layout route with nested pages
-│       ├── index.tsx    # Home page
-│       ├── chat.tsx     # Chat page
-│       └── news.tsx     # News page
+│       ├── index.tsx    # Chat page
+│       └── articles.tsx # Articles page with ingest buttons
 ├── types/           # TypeScript type definitions
 ├── lib/             # Utility functions
 ├── index.css        # Global styles (Tailwind)
 ├── main.tsx         # Application entry point
 └── routeTree.gen.ts # Auto-generated route tree (DO NOT EDIT)
 ```
+
+### Key Components
+
+#### Chat Interface (`components/Chat/ChatInterface.tsx`)
+
+The chat interface is the primary component for real-time question answering about crypto news:
+
+- **WebSocket Communication**: Maintains persistent WebSocket connection to `/ask` endpoint for bidirectional real-time communication
+- **Streaming Responses**: Displays AI responses as they stream character-by-character with live text updates
+- **Source Citations**: Shows referenced news articles with clickable links for each assistant response
+- **Connection Status**: Real-time badge indicator showing connection state (Connected/Connecting/Disconnected/Error)
+- **Custom Hook**: Uses `useWebSocket` hook (`hooks/useWebSocket.ts`) for connection lifecycle management and auto-reconnect logic
+- **Message Protocol**: Processes 4 message types from backend: `sources` (article references), `chunk` (text fragments), `done` (stream complete), `error` (failure messages)
+- **Input Validation**: Enforces 500 character limit with empty input checking
+- **Sub-Components**:
+  - `ChatMessage` - Renders individual messages with type-specific styling (user/assistant/error)
+  - `MessageInput` - Text input field with send button, disabled during streaming or when disconnected
+- **Backend Integration**: Rate limiting and content moderation enforced server-side, auto-scrolling to latest messages
+
+#### Articles Page (`routes/_layout/articles.tsx`)
+
+The articles page displays a table of ingested news articles and provides manual ingestion controls:
+
+- **NewsTable Component**: Displays articles with sorting, pagination, and filtering
+- **Ingest Buttons**: Three one-click buttons for manual ingestion:
+  - "Ingest DL News"
+  - "Ingest The Defiant"
+  - "Ingest Cointelegraph"
+- **Implementation**: Uses TanStack Query's `useMutation` hook to trigger `POST /news/ingest` with source-specific `source_name` parameters
+- **Loading States**: Buttons disable during ingestion and show spinning icon on the active button
+- **Auto-Refresh**: On successful ingestion, invalidates the `['news']` query to automatically refresh the articles table
 
 ### Key Files:
 
@@ -181,6 +211,55 @@ To update tests, navigate to the `tests/` directory and modify existing test fil
 
 For more information on writing and running Playwright tests, refer to the official [Playwright documentation](https://playwright.dev/docs/intro).
 
+### Current Test Coverage (E2E)
+
+| File                     | Purpose                                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------------------- |
+| `tests/home.spec.ts`     | Verifies homepage renders, navbar links present, chat landing copy visible.                 |
+| `tests/articles.spec.ts` | Navigates to Articles page; asserts ingestion controls & heading displayed.                 |
+| `tests/chat.spec.ts`     | Asserts chat heading, connection status badge, input behavior & optional send when enabled. |
+
+### Planned / Suggested Additional Tests
+
+1. Chat streaming flow (requires stable WebSocket backend): ensure sources + incremental chunks appear.
+2. Manual ingestion buttons: trigger each source and assert mutation state (disabled + spinner) then table refresh.
+3. Table sorting & pagination: verify changing sort order and page navigation updates visible rows.
+4. Accessibility: check landmarks, roles, and focus order; ensure contrast via snapshot + Axe scan.
+5. Dark/Light mode (if theming toggle added): persist theme in local storage across reload.
+6. Error states: simulate network failure (route interception) and assert error messages for chat and articles table.
+
+### Selector Strategy Notes
+
+Prefer role-based queries (`getByRole`, `getByText`, `getByPlaceholder`) to reduce brittleness. Avoid relying on framework-specific classNames generated by Tailwind.
+
+### Environment Variables for Tests
+
+Add a `.env` file if custom API / WS endpoints differ:
+
+```
+VITE_API_URL=http://localhost:8000
+VITE_WS_URL=ws://localhost:8000/ask
+```
+
+### Adding a New Test
+
+1. Create a new spec in `frontend/tests/`.
+2. Use `test.describe` blocks for logical grouping.
+3. Reuse navigation steps; prefer starting at `/` (Playwright `baseURL` is configured).
+4. Use soft assertions (`expect.soft`) for non-critical, variable states.
+5. Keep timeouts modest; raise only where streaming or network lag is expected.
+
+### CI Recommendations
+
+1. Cache `~/.cache/ms-playwright` (browsers) & `node_modules`.
+2. Run `npx playwright test --reporter=html` and upload artifact.
+3. Optionally run a lightweight Axe audit (add dev dep `axe-playwright`).
+4. Parallelize by splitting specs if suite grows (>30s target total time).
+
+---
+
+_Test strategy section auto-generated; update as features evolve._
+
 ## Adding Shadcn UI Components
 
 This project uses [Shadcn UI](https://ui.shadcn.com/) for UI components. To add a new component:
@@ -190,6 +269,7 @@ npx shadcn@latest add <component-name>
 ```
 
 Example:
+
 ```bash
 npx shadcn@latest add dialog
 npx shadcn@latest add dropdown-menu
@@ -211,16 +291,19 @@ Components will be added to `src/components/ui/` and can be customized as needed
 ## Development Workflow
 
 1. **Start Docker services** (backend, database, Ollama):
+
    ```bash
    docker compose up -d
    ```
 
 2. **Stop the frontend Docker service** (to run locally):
+
    ```bash
    docker compose stop frontend
    ```
 
 3. **Start local dev server**:
+
    ```bash
    npm run dev
    ```
@@ -228,6 +311,7 @@ Components will be added to `src/components/ui/` and can be customized as needed
 4. **Make changes** - Vite HMR will automatically reload
 
 5. **Regenerate API client** (if backend changed):
+
    ```bash
    ./scripts/generate-client.sh
    ```

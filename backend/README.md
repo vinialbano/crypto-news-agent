@@ -74,6 +74,10 @@ All API endpoints in a single file with clean dependency injection.
 **News Endpoints:**
 - `GET /news/` - List recent articles with optional source filtering
 - `POST /news/ingest/` - Manually trigger ingestion (single source or all)
+  - **Query Parameter**: `source_name` (optional) - Specific source to ingest: "DL News", "The Defiant", or "Cointelegraph". Omit to ingest all sources.
+  - **Response**: JSON with ingestion statistics (articles ingested, duplicates skipped, errors)
+  - **Frontend Usage**: Three one-click buttons on Articles page (`/articles`) trigger this endpoint with source-specific parameters
+  - **Loading State**: Frontend buttons disable during ingestion and show spinner, automatically refreshing the articles list on completion
 - `GET /news/sources` - List configured news sources
 
 **Questions Endpoint:**

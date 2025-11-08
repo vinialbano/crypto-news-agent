@@ -9,12 +9,14 @@ import { MessageInput } from './MessageInput'
 
 export function ChatInterface() {
   const { sendMessage, messages, connectionStatus, error } = useWebSocket()
-  const viewportRef = useRef<HTMLDivElement>(null)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (viewportRef.current) {
-      viewportRef.current.scrollTop = viewportRef.current.scrollHeight
+    // Access the ScrollArea's viewport element
+    const viewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
+    if (viewport) {
+      viewport.scrollTop = viewport.scrollHeight
     }
   }, [messages])
 
@@ -55,7 +57,7 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div className="flex flex-col h-full pb-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -76,10 +78,13 @@ export function ChatInterface() {
       )}
 
       {/* Messages Area */}
-      <ScrollArea className="flex-1 border rounded-lg mb-4 bg-background">
-        <div ref={viewportRef} className="p-4 h-full overflow-y-auto">
+      <ScrollArea
+        ref={scrollAreaRef}
+        className="flex-1 border rounded-lg mb-4 bg-background"
+      >
+        <div className="p-4">
           {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
+            <div className="flex items-center justify-center min-h-[400px] text-muted-foreground">
               <div className="text-center space-y-2">
                 <p className="text-lg font-medium">Welcome to Crypto News Chat!</p>
                 <p className="text-sm">
@@ -89,7 +94,7 @@ export function ChatInterface() {
               </div>
             </div>
           ) : (
-            <div>
+            <div className="space-y-4">
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}

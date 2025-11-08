@@ -40,7 +40,7 @@ My approach was to build a complete **RAG (Retrieval-Augmented Generation) pipel
 
 ## Features
 
-- **Automated News Ingestion**: Fetches and processes articles from leading crypto news sources (DL News, The Defiant, Cointelegraph)
+- **Automated News Ingestion**: Fetches and processes articles from leading crypto news sources (DL News, The Defiant, Cointelegraph) with both scheduled background jobs and one-click manual ingestion buttons
 - **RAG Question Answering**: Ask questions about recent crypto news and get AI-powered answers with source citations
 - **Real-Time Streaming**: WebSocket-based streaming responses for immediate feedback
 - **Content Moderation**: Built-in filtering for profanity, spam, and prompt injection attacks
@@ -140,11 +140,23 @@ This will start:
 
 **Frontend**: Open http://localhost:5173
 
-### 4. Ask Questions About Crypto News
+### 4. Ingest Articles (Optional)
 
-Once articles are ingested (happens automatically every 30 minutes, or trigger manually via API):
+Articles are automatically ingested every 30 minutes by a background scheduler. For immediate ingestion:
 
-1. Navigate to the chat page in the frontend
+1. Navigate to the **Articles** page at http://localhost:5173/articles
+2. Click one of the ingest buttons:
+   - **Ingest DL News**
+   - **Ingest The Defiant**
+   - **Ingest Cointelegraph**
+3. Wait for ingestion to complete (buttons will show loading spinner)
+4. New articles will appear automatically in the table
+
+### 5. Ask Questions About Crypto News
+
+Once articles are ingested:
+
+1. Navigate to the **Chat** page in the frontend
 2. Ask natural language questions like:
    - "What are the latest developments in Bitcoin?"
    - "Tell me about recent Ethereum updates"
