@@ -25,12 +25,12 @@ else
     ollama pull nomic-embed-text
 fi
 
-# Pull chat model if not installed
-if echo "$MODELS" | grep -q "llama3.2:3b"; then
-    echo "llama3.2:3b is already installed"
+# Pull chat model if not installed (1B Q4_K_M variant for better speed)
+if echo "$MODELS" | grep -q "llama3.2:1b-instruct-q4_K_M"; then
+    echo "llama3.2:1b-instruct-q4_K_M is already installed"
 else
-    echo "Pulling llama3.2:3b..."
-    ollama pull llama3.2:3b
+    echo "Pulling llama3.2:1b-instruct-q4_K_M..."
+    ollama pull llama3.2:1b-instruct-q4_K_M
 fi
 
 echo "All required models are installed!"
