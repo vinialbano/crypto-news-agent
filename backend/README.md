@@ -4,8 +4,8 @@ A production-ready FastAPI backend for crypto news ingestion and RAG-powered que
 
 ## Requirements
 
-* [Docker](https://www.docker.com/)
-* [uv](https://docs.astral.sh/uv/) for Python package and environment management
+- [Docker](https://www.docker.com/)
+- [uv](https://docs.astral.sh/uv/) for Python package and environment management
 
 ## Architecture Overview
 
@@ -24,6 +24,7 @@ PostgreSQL + pgvector
 ```
 
 **Key Architectural Patterns:**
+
 - **Service Layer Pattern**: Business logic encapsulated in dedicated services
 - **Repository Pattern**: Database operations abstracted in `NewsRepository`
 - **Dependency Injection**: All external dependencies injected via FastAPI's `Depends()`
@@ -32,6 +33,7 @@ PostgreSQL + pgvector
 ### Recent Architecture Changes
 
 The backend recently migrated from database-driven news sources to **config-based management**:
+
 - News sources now defined in environment variables (`.env` file)
 - No `news_sources` table required
 - Simpler configuration and version control
@@ -72,6 +74,7 @@ backend/app/
 All API endpoints in a single file with clean dependency injection.
 
 **News Endpoints:**
+
 - `GET /news/` - List recent articles with optional source filtering
 - `POST /news/ingest/` - Manually trigger ingestion (single source or all)
   - **Query Parameter**: `source_name` (optional) - Specific source to ingest: "DL News", "The Defiant", or "Cointelegraph". Omit to ingest all sources.
@@ -81,6 +84,7 @@ All API endpoints in a single file with clean dependency injection.
 - `GET /news/sources` - List configured news sources
 
 **Questions Endpoint:**
+
 - `WebSocket /ask` - Real-time streaming question answering
   - Rate limiting: 10 questions per minute per client
   - Content moderation: Profanity/spam/injection detection
@@ -89,6 +93,7 @@ All API endpoints in a single file with clean dependency injection.
 ### 2. Database Models (`models.py`)
 
 **NewsArticle Model:**
+
 ```python
 class NewsArticle(SQLModel, table=True):
     id: int                      # Primary key
@@ -103,6 +108,7 @@ class NewsArticle(SQLModel, table=True):
 ```
 
 **Features:**
+
 - SQLModel combines Pydantic validation + SQLAlchemy ORM
 - Built-in deduplication via `content_hash` unique constraint
 - pgvector integration for semantic search
@@ -111,9 +117,11 @@ class NewsArticle(SQLModel, table=True):
 ### 3. Services Layer
 
 #### **IngestionService** (`ingestion.py`)
+
 Orchestrates the news ingestion pipeline: RSS fetching → processing → persistence.
 
 **Methods:**
+
 - `ingest_source(name: str)` - Ingest from single source
 - `ingest_all_sources()` - Ingest from all configured sources
 - `cleanup_old_articles(days: int)` - Delete articles older than N days
@@ -121,36 +129,44 @@ Orchestrates the news ingestion pipeline: RSS fetching → processing → persis
 **Returns:** Detailed statistics (new articles, duplicates, errors, duration)
 
 #### **RSSFetcher** (`rss_fetcher.py`)
+
 Fetches and parses RSS feeds using LangChain's `RSSFeedLoader` with `newspaper3k` for full-text extraction.
 
 **Features:**
+
 - Extracts full article content (not just RSS summaries)
 - Handles publish date parsing with fallback
 - Filters out short content (< 100 chars)
 - Graceful error handling per article
 
 #### **ArticleProcessor** (`article_processor.py`)
+
 Processes articles with duplicate detection and embedding generation.
 
 **Workflow:**
+
 1. Check for duplicates via content hash
 2. Generate embedding via `EmbeddingsService`
 3. Persist to database via `NewsRepository`
 4. Track statistics (new/duplicates/errors)
 
 #### **EmbeddingsService** (`embeddings.py`)
+
 Wraps Ollama embeddings using `nomic-embed-text` model.
 
 **Methods:**
+
 - `embed_query(text)` - Generate embedding for single text (sync)
 - `aembed_query(text)` - Generate embedding (async)
 - `embed_documents(texts)` - Generate embeddings for batch (sync)
 - `aembed_documents(texts)` - Generate embeddings for batch (async)
 
 #### **RAGService** (`rag.py`)
+
 Question answering using Retrieval Augmented Generation.
 
 **Workflow:**
+
 1. Generate query embedding via `EmbeddingsService`
 2. Semantic search for top-K relevant articles via `NewsRepository`
 3. Check relevance threshold (pgvector cosine distance)
@@ -158,14 +174,17 @@ Question answering using Retrieval Augmented Generation.
 5. Stream LLM response with source citations via `ChatOllama`
 
 **Features:**
+
 - Streaming responses for real-time UX
 - Source attribution in answers
 - Configurable relevance threshold and top-K
 
 #### **ContentModerationService** (`content_moderation.py`)
+
 Multi-layer input validation and security.
 
 **Checks:**
+
 - Profanity filtering (regex patterns)
 - Prompt injection detection (common attack patterns)
 - Spam detection (repetitive patterns)
@@ -174,13 +193,16 @@ Multi-layer input validation and security.
 **Returns:** `ModerationResult(is_valid, reason, filtered_text)`
 
 #### **NewsRepository** (`news_repository.py`)
+
 Database operations abstraction using repository pattern.
 
 **News Sources:**
+
 - `get_active_news_sources()` - Returns sources from config (not DB)
 - `get_source_by_name(name)` - Lookup source by name
 
 **Article Operations:**
+
 - `create_news_article()` - Insert with duplicate detection
 - `get_recent_articles()` - Paginated list with filtering
 - `semantic_search()` - Vector similarity search via pgvector
@@ -200,7 +222,7 @@ class Settings(BaseSettings):
 
     # Ollama
     OLLAMA_HOST: str = "http://localhost:11434"
-    OLLAMA_CHAT_MODEL: str = "llama3.2:3b"
+    OLLAMA_CHAT_MODEL: str = "llama3.2:1b-instruct-q4_K_M"
     OLLAMA_EMBEDDING_MODEL: str = "nomic-embed-text"
 
     # News Sources (environment variables)
@@ -237,11 +259,13 @@ class Settings(BaseSettings):
 **Critical Design Decision:** ALL dependency factories centralized in one file.
 
 **Benefits:**
+
 - Testability: Easy to mock dependencies in tests
 - Consistency: Same dependency graph everywhere (API, scheduler, CLI)
 - Single Responsibility: Services never instantiate their own dependencies
 
 **Example Factory:**
+
 ```python
 def create_ingestion_service(session: Session) -> IngestionService:
     """Factory for IngestionService with all dependencies."""
@@ -260,7 +284,9 @@ def create_ingestion_service(session: Session) -> IngestionService:
 **APScheduler** (AsyncIOScheduler) manages background jobs:
 
 **Jobs:**
+
 1. **News Ingestion** - Every 30 minutes (configurable)
+
    - Calls `ingest_all_sources()`
    - Max instances: 1 (prevents overlapping runs)
 
@@ -272,6 +298,7 @@ def create_ingestion_service(session: Session) -> IngestionService:
 ## Key Features
 
 ### News Ingestion System
+
 - Automatic RSS feed fetching with full-text extraction
 - Deduplication via content hashing (SHA-256)
 - Batch processing with detailed statistics
@@ -280,14 +307,16 @@ def create_ingestion_service(session: Session) -> IngestionService:
 - Automatic cleanup of old articles (daily)
 
 ### RAG Question Answering
+
 - Semantic search using pgvector embeddings (768-dim nomic-embed-text)
-- LLM response generation via Ollama (llama3.2:3b)
+- LLM response generation via Ollama (llama3.2:1b-instruct-q4_K_M)
 - Streaming responses for real-time user experience
 - Source citation in answers
 - Relevance threshold filtering (cosine distance < 0.5)
 - WebSocket protocol for bi-directional communication
 
 ### Content Moderation
+
 - Rate limiting: 10 questions per minute per client
 - Profanity filtering
 - Prompt injection prevention
@@ -295,6 +324,7 @@ def create_ingestion_service(session: Session) -> IngestionService:
 - Connection timeout protection (3 minutes)
 
 ### Database Features
+
 - PostgreSQL with pgvector extension for vector similarity
 - HNSW index for fast approximate nearest neighbor search
 - Alembic migrations for schema versioning
@@ -303,39 +333,46 @@ def create_ingestion_service(session: Session) -> IngestionService:
 ## Technology Stack
 
 **Core Framework:**
+
 - **FastAPI** - Modern async web framework with automatic OpenAPI docs
 - **SQLModel** - Type-safe ORM (Pydantic + SQLAlchemy)
 - **Pydantic** - Data validation and settings management
 - **Alembic** - Database migration tool
 
 **Database:**
+
 - **PostgreSQL 15+** - Primary database
 - **pgvector** - Vector similarity search extension
 - **psycopg[binary]** - PostgreSQL adapter
 
 **AI/LLM Stack:**
+
 - **LangChain** - Framework for LLM applications
 - **langchain-ollama** - Ollama integration (chat + embeddings)
 - **langchain-community** - Community tools (RSSFeedLoader)
 - **Ollama** - Local LLM server
   - `nomic-embed-text` - 768-dim embeddings
-  - `llama3.2:3b` - Chat model for question answering
+  - `llama3.2:1b-instruct-q4_K_M` - Chat model for question answering
 
 **News Ingestion:**
+
 - **feedparser** - RSS feed parsing
 - **newspaper3k** - Full-text article extraction
 - **python-dateutil** - Flexible date parsing
 - **lxml-html-clean** - HTML sanitization
 
 **Background Jobs:**
+
 - **APScheduler** - Cron-like job scheduling
 
 **Testing:**
+
 - **pytest** - Testing framework
 - **pytest-asyncio** - Async test support
 - **coverage** - Code coverage reporting
 
 **Code Quality:**
+
 - **ruff** - Fast Python linter/formatter
 - **mypy** - Static type checking
 - **pre-commit** - Git hooks for quality checks
@@ -427,6 +464,7 @@ Make sure your editor is using the correct Python virtual environment, with the 
 ### Code Organization
 
 Modify or add:
+
 - **SQLModel models** in `./backend/app/models.py`
 - **API endpoints** in `./backend/app/routes.py`
 - **Business logic** in `./backend/app/services/`
@@ -509,11 +547,13 @@ If you use GitHub Actions the tests will run automatically.
 ### Test Organization
 
 Tests are organized by type:
+
 - **Unit Tests** (`tests/unit/`) - Isolated component testing with mocks
 - **Integration Tests** (`tests/integration/`) - API endpoints with real database
 - **Scripts Tests** (`tests/scripts/`) - Startup and utility scripts
 
 Mark integration tests with:
+
 ```python
 @pytest.mark.integration
 def test_something():
@@ -546,23 +586,23 @@ As during local development your app directory is mounted as a volume inside the
 
 Make sure you create a "revision" of your models and that you "upgrade" your database with that revision every time you change them. As this is what will update the tables in your database. Otherwise, your application will have errors.
 
-* Start an interactive session in the backend container:
+- Start an interactive session in the backend container:
 
 ```console
 $ docker compose exec backend bash
 ```
 
-* Alembic is already configured to import your SQLModel models from `./backend/app/models.py`.
+- Alembic is already configured to import your SQLModel models from `./backend/app/models.py`.
 
-* After changing a model (for example, adding a column), inside the container, create a revision, e.g.:
+- After changing a model (for example, adding a column), inside the container, create a revision, e.g.:
 
 ```console
 $ alembic revision --autogenerate -m "Add column last_name to User model"
 ```
 
-* Commit to the git repository the files generated in the alembic directory.
+- Commit to the git repository the files generated in the alembic directory.
 
-* After creating the revision, run the migration in the database (this is what will actually change the database):
+- After creating the revision, run the migration in the database (this is what will actually change the database):
 
 ```console
 $ alembic upgrade head
@@ -600,6 +640,7 @@ If you don't want to start with the default models and want to remove them / mod
 **Critical Rule:** ALL dependency factories must be in `app/deps.py`.
 
 **Why?**
+
 - Testability: Easy to mock dependencies in unit tests
 - Consistency: Same dependency graph in API routes, background scheduler, CLI scripts, and tests
 - Single Responsibility: Services never instantiate their own dependencies
@@ -635,6 +676,7 @@ RSS_COINTELEGRAPH=https://cointelegraph.com/rss
 ```
 
 To add a new source:
+
 1. Add RSS URL to `.env`
 2. Update `Settings.news_sources` computed field in `app/core/config.py`
 3. Source will be automatically picked up by ingestion service
@@ -646,11 +688,13 @@ To add a new source:
 Background jobs are managed by APScheduler in `app/scheduler.py`:
 
 **Ingestion Job:**
+
 - Interval: `INGESTION_INTERVAL_MINUTES` (default: 30 minutes)
 - Calls: `IngestionService.ingest_all_sources()`
 - Max instances: 1 (prevents overlapping runs)
 
 **Cleanup Job:**
+
 - Schedule: Daily at 2 AM UTC
 - Calls: `IngestionService.cleanup_old_articles()`
 - Retention: `ARTICLE_CLEANUP_DAYS` (default: 90 days)
@@ -671,18 +715,20 @@ The OpenAPI schema includes all REST endpoints and WebSocket connections.
 ### Ollama Connection Errors
 
 If the backend fails to start with Ollama connection errors, ensure:
+
 1. Ollama service is running: `docker compose ps ollama`
 2. Check Ollama logs: `docker compose logs ollama`
 3. Verify model is pulled: `docker compose exec ollama ollama list`
 4. Pull required models if missing:
    ```bash
    docker compose exec ollama ollama pull nomic-embed-text
-   docker compose exec ollama ollama pull llama3.2:3b
+   docker compose exec ollama ollama pull llama3.2:1b-instruct-q4_K_M
    ```
 
 ### Database Migration Errors
 
 If migrations fail:
+
 1. Check database connection: `docker compose ps db`
 2. Ensure all models are imported in `alembic/env.py`
 3. For pgvector issues, verify extension is installed: `docker compose exec db psql -U app_user -d app -c "CREATE EXTENSION IF NOT EXISTS vector;"`
@@ -690,6 +736,7 @@ If migrations fail:
 ### Import Errors
 
 If you see `ModuleNotFoundError`:
+
 1. Ensure virtual environment is activated: `source .venv/bin/activate`
 2. Re-run dependency installation: `uv sync`
 3. Check Python version (requires 3.10+)

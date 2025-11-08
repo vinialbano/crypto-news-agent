@@ -9,6 +9,7 @@ This project was built as a technical assessment with the following requirements
 **Core Objective**: Build an LLM-powered web application that understands user questions and provides real-time, accurate answers based on the latest cryptocurrency news.
 
 **Key Requirements**:
+
 - Ingest live crypto news from multiple sources
 - Semantic search for relevant articles
 - LLM-powered answer generation with context
@@ -17,6 +18,7 @@ This project was built as a technical assessment with the following requirements
 - Basic content moderation for offensive input
 
 **Constraints**:
+
 - Backend: Any language
 - Frontend: React
 - News sources: DL News, The Defiant, Cointelegraph
@@ -29,9 +31,10 @@ My approach was to build a complete **RAG (Retrieval-Augmented Generation) pipel
 2. **Vectorization**: Generate embeddings with Ollama (nomic-embed-text)
 3. **Storage**: PostgreSQL with pgvector extension for semantic search
 4. **Retrieval**: Query embedding → Cosine similarity search → Top-K articles
-5. **Generation**: Feed context to LLM (llama3.2:3b) → Stream response token-by-token
+5. **Generation**: Feed context to LLM (llama3.2:1b-instruct-q4_K_M) → Stream response token-by-token
 
 **Technology Choices**:
+
 - **Backend**: FastAPI + Python (rich ETL/vectorization ecosystem)
 - **LangChain**: RSSFeedLoader for easy XML parsing and content extraction
 - **WebSocket**: Bi-directional streaming (simpler than SSE for back-and-forth)
@@ -52,20 +55,23 @@ My approach was to build a complete **RAG (Retrieval-Augmented Generation) pipel
 ## Technology Stack
 
 ### Backend
+
 - **FastAPI** - Modern async Python web framework (chosen for quick development + automatic OpenAPI docs)
 - **SQLModel** - Type-safe ORM (Pydantic + SQLAlchemy) for database operations
 - **PostgreSQL + pgvector** - Single database solution for both relational data and vector similarity search
-- **Ollama** - Local LLM server (nomic-embed-text for embeddings, llama3.2:3b for chat)
+- **Ollama** - Local LLM server (nomic-embed-text for embeddings, llama3.2:1b-instruct-q4_K_M for chat)
 - **LangChain** - Framework for RAG applications (RSSFeedLoader, document processing)
 - **APScheduler** - Background job scheduling for automatic ingestion
 
 ### Frontend
+
 - **React + TypeScript** - Modern frontend with type safety
 - **TanStack Query & Router** - Data fetching/caching and file-based routing
 - **Shadcn UI + Tailwind CSS** - Composable component library with dark mode support
 - **Playwright** - End-to-end testing framework
 
 ### Infrastructure
+
 - **Docker Compose** - Local development environment with all services
 - **pytest** - Comprehensive test suite (unit tests, integration tests, E2E tests)
 
@@ -92,6 +98,7 @@ Ollama (Local LLM)
 **Design Pattern**: Service-oriented architecture with dependency injection for testability. All external dependencies injected via FastAPI's `Depends()` pattern, centralized in `deps.py`.
 
 For detailed technical documentation, see:
+
 - Backend: [backend/README.md](./backend/README.md)
 - Frontend: [frontend/README.md](./frontend/README.md)
 
@@ -130,6 +137,7 @@ docker compose watch
 ```
 
 This will start:
+
 - **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
 - **Frontend**: http://localhost:5173
@@ -170,6 +178,7 @@ Once articles are ingested:
 **Decision**: Started with FastAPI full-stack template, then removed some thousands of lines of production code.
 
 **Rationale**:
+
 - Quick start with batteries included (Docker, migrations, testing setup)
 - Template included production complexity not needed for this project
 - Removed: GitHub Actions, Traefik reverse proxy, email services, deployment scripts
@@ -183,6 +192,7 @@ Once articles are ingested:
 **Decision**: News sources defined in environment variables, not in database.
 
 **Rationale**:
+
 - Simpler: No admin UI needed to manage sources
 - Version controlled: Sources tracked in `.env` file
 - Deployment-friendly: Change sources without database migration
@@ -196,6 +206,7 @@ Once articles are ingested:
 **Decision**: Use pgvector extension in PostgreSQL instead of dedicated vector database (Qdrant, Weaviate, Pinecone).
 
 **Rationale**:
+
 - Single database: Relational data + vectors in one place
 - ACID compliance: Transactions work across all data
 - Familiar tooling: Standard PostgreSQL tools and backups
@@ -210,11 +221,13 @@ Once articles are ingested:
 **Decision**: WebSocket protocol for question answering instead of Server-Sent Events.
 
 **Rationale**:
+
 - Bi-directional: Can send metadata and receive responses in same connection
 - Simpler protocol: Less HTTP overhead for streaming
 - Built-in backpressure: Client can control flow
 
 **Implementation**: Rate limiting (10 questions/minute), timeout protection (3 minutes), structured protocol:
+
 ```json
 {"type": "sources", "articles": [...]}
 {"type": "chunk", "content": "Bitcoin..."}
@@ -226,6 +239,7 @@ Once articles are ingested:
 **Decision**: ALL dependency factories must live in `backend/app/deps.py`.
 
 **Rationale**:
+
 - Testability: Easy to mock dependencies in unit tests
 - Consistency: Same dependency graph everywhere (API, scheduler, CLI)
 - Single Responsibility: Services never instantiate their own dependencies
@@ -237,6 +251,7 @@ Once articles are ingested:
 **Decision**: Use LangChain's RSSFeedLoader with newspaper3k for full-text extraction.
 
 **Rationale**:
+
 - LangChain integration: Fits naturally into RAG pipeline
 - Full-text extraction: newspaper3k gets complete article content (not just RSS summary)
 - Mature libraries: Battle-tested for content extraction
@@ -248,6 +263,7 @@ Once articles are ingested:
 **Decision**: SHA-256 hash of (title + URL) with unique database constraint.
 
 **Rationale**:
+
 - RSS feeds often republish same articles
 - Database-level enforcement prevents duplicates automatically
 - Fast lookup: Hash indexed for O(1) duplicate detection
@@ -261,6 +277,7 @@ Once articles are ingested:
 **Problem**: Backend starts before Ollama finishes loading models → connection failures.
 
 **Solution**:
+
 - Health check script with retry logic: `backend/scripts/prestart.sh`
 - Docker healthchecks: Wait for Ollama ready state
 - Graceful degradation: Log errors but continue startup
@@ -269,9 +286,10 @@ Once articles are ingested:
 
 ### Challenge 2: Duplicate Article Detection with URL Normalization
 
-**Problem**: RSS feeds republish articles with different tracking parameters (utm_*, fbclid, timestamps), causing the same article to be stored multiple times.
+**Problem**: RSS feeds republish articles with different tracking parameters (utm\_\*, fbclid, timestamps), causing the same article to be stored multiple times.
 
 **Example**: These URLs point to the same article but have different query parameters:
+
 ```
 https://example.com/article?utm_source=rss&timestamp=123
 https://example.com/article?utm_source=twitter&fbclid=xyz
@@ -279,6 +297,7 @@ https://example.com/article?gclid=abc&utm_medium=cpc
 ```
 
 **Solution**:
+
 - **URL normalization**: Strip query parameters, fragments, trailing slashes before hashing
 - **Lowercase normalization**: Convert scheme, domain, and path to lowercase
 - **Content hash**: `SHA-256(title + normalized_url)` as unique identifier
@@ -286,6 +305,7 @@ https://example.com/article?gclid=abc&utm_medium=cpc
 - **Fast lookup**: O(1) hash-based duplicate detection
 
 **Implementation**:
+
 - `backend/app/services/url_utils.py` - URL normalization utility
 - `backend/app/services/article_processor.py` - Uses normalized URLs for hashing
 - Comprehensive test suite with real-world URLs
@@ -297,6 +317,7 @@ https://example.com/article?gclid=abc&utm_medium=cpc
 **Problem**: LLM responses take several seconds → need to show progress to user.
 
 **Solution**:
+
 - WebSocket streaming: Token-by-token response delivery
 - Structured protocol: Send sources first, then stream content, then done signal
 - Frontend handling: Update UI as each token arrives
@@ -310,17 +331,20 @@ https://example.com/article?gclid=abc&utm_medium=cpc
 **Problem**: Some RSS feeds return `null` for publication dates even when `<pubDate>` exists in the RSS XML.
 
 **Details**:
+
 - LangChain's `RSSFeedLoader` fails to parse dates from certain feeds (e.g., Cointelegraph)
 - Raw RSS XML contains valid `<pubDate>` tags: `<pubDate>Fri, 07 Nov 2025 23:51:58 +0000</pubDate>`
 - The `publish_date` field in document metadata is consistently `None` for these feeds
 - Other feeds (e.g., The Defiant) work correctly and return valid datetime objects
 
 **Impact**:
+
 - Articles from affected feeds have `published_at: null` in the database
 - Semantic search and chat features still work (dates are optional)
 - Articles can still be ingested and deduplicated correctly
 
 **Potential Solutions** (not implemented):
+
 - Use `feedparser` library as a fallback to parse dates directly from RSS XML
 - Parse dates from article content using NLP
 - Switch to alternative RSS feeds for affected sources
@@ -333,21 +357,25 @@ https://example.com/article?gclid=abc&utm_medium=cpc
 ### What I Sacrificed for Simplicity
 
 1. **Config-based sources vs Admin UI**
+
    - Pro: Simpler code, version controlled
    - Con: Can't add sources without deployment
    - Decision: Config is sufficient for 3-5 sources
 
 2. **Local LLM vs Cloud APIs (OpenAI/Anthropic)**
+
    - Pro: Zero API costs, complete privacy, learning experience
    - Con: Slower inference (3-5 sec vs 1-2 sec), requires GPU for best performance
    - Decision: Acceptable for demo, worth the learning
 
 3. **Single PostgreSQL vs Specialized Vector DB**
+
    - Pro: Simpler deployment, familiar tooling, ACID compliance
    - Con: Fewer vector search features (no filtering, clustering, etc.)
    - Decision: pgvector sufficient for semantic search needs
 
 4. **Regex-based moderation vs ML model**
+
    - Pro: Fast, predictable, no extra dependencies
    - Con: Can be bypassed with creative spelling
    - Decision: Good enough for profanity/spam, not production-grade
@@ -362,16 +390,18 @@ https://example.com/article?gclid=abc&utm_medium=cpc
 ### If Starting Over:
 
 1. **Start with simpler template**
+
    - FastAPI full-stack was overkill for this project
    - Would use another template or build from scratch
    - Saved time on setup, lost time on cleanup
 
 2. **Consider Qdrant/Weaviate for vectors**
+
    - pgvector works, but specialized DBs have better features
    - Filtering, hybrid search, clustering would be useful
    - Trade-off: One more service to manage
 
-5. **Implement better error boundaries**
+3. **Implement better error boundaries**
    - Current error handling is basic (try/catch + logging)
    - Structured errors with retry logic would be more robust
    - Integration with an observability tool for production monitoring
@@ -440,6 +470,7 @@ crypto-news-agent/
 ## Credits
 
 Built with:
+
 - [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
 - [React](https://react.dev/) - UI library
 - [Ollama](https://ollama.ai/) - Local LLM server
