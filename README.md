@@ -1,239 +1,449 @@
-# Full Stack FastAPI Template
+# Crypto News Agent
 
-<a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3ATest" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test/badge.svg" alt="Test"></a>
-<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/fastapi/full-stack-fastapi-template" target="_blank"><img src="https://coverage-badge.samuelcolvin.workers.dev/fastapi/full-stack-fastapi-template.svg" alt="Coverage"></a>
+A RAG-powered crypto news aggregator with intelligent question answering using local LLMs. The system automatically ingests news from multiple crypto sources and enables natural language queries about recent developments in the crypto space.
 
-## Technology Stack and Features
+## The Challenge
 
-- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
-    - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for the Python SQL database interactions (ORM).
-    - 🔍 [Pydantic](https://docs.pydantic.dev), used by FastAPI, for the data validation and settings management.
-    - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
-- 🚀 [React](https://react.dev) for the frontend.
-    - 💃 Using TypeScript, hooks, Vite, and other parts of a modern frontend stack.
-    - 🎨 [Chakra UI](https://chakra-ui.com) for the frontend components.
-    - 🤖 An automatically generated frontend client.
-    - 🧪 [Playwright](https://playwright.dev) for End-to-End testing.
-    - 🦇 Dark mode support.
-- 🐋 [Docker Compose](https://www.docker.com) for development and production.
-- 🔒 Secure password hashing by default.
-- 🔑 JWT (JSON Web Token) authentication.
-- 📫 Email based password recovery.
-- ✅ Tests with [Pytest](https://pytest.org).
-- 📞 [Traefik](https://traefik.io) as a reverse proxy / load balancer.
-- 🚢 Deployment instructions using Docker Compose, including how to set up a frontend Traefik proxy to handle automatic HTTPS certificates.
-- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
+This project was built as a technical assessment with the following requirements:
 
-### Dashboard Login
+**Core Objective**: Build an LLM-powered web application that understands user questions and provides real-time, accurate answers based on the latest cryptocurrency news.
 
-[![API docs](img/login.png)](https://github.com/fastapi/full-stack-fastapi-template)
+**Key Requirements**:
+- Ingest live crypto news from multiple sources
+- Semantic search for relevant articles
+- LLM-powered answer generation with context
+- Real-time streaming responses (word-by-word)
+- Handle concurrent requests and edge cases
+- Basic content moderation for offensive input
 
-### Dashboard - Admin
+**Constraints**:
+- Backend: Any language
+- Frontend: React
+- News sources: DL News, The Defiant, Cointelegraph
 
-[![API docs](img/dashboard.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## Solution Approach
 
-### Dashboard - Create User
+My approach was to build a complete **RAG (Retrieval-Augmented Generation) pipeline**:
 
-[![API docs](img/dashboard-create.png)](https://github.com/fastapi/full-stack-fastapi-template)
+1. **Ingestion**: RSS feeds → Parse with LangChain → Extract full-text with newspaper3k
+2. **Vectorization**: Generate embeddings with Ollama (nomic-embed-text)
+3. **Storage**: PostgreSQL with pgvector extension for semantic search
+4. **Retrieval**: Query embedding → Cosine similarity search → Top-K articles
+5. **Generation**: Feed context to LLM (llama3.2:3b) → Stream response token-by-token
 
-### Dashboard - Items
+**Technology Choices**:
+- **Backend**: FastAPI + Python (rich ETL/vectorization ecosystem)
+- **LangChain**: RSSFeedLoader for easy XML parsing and content extraction
+- **WebSocket**: Bi-directional streaming (simpler than SSE for back-and-forth)
+- **Shadcn UI**: Rapid prototyping with composable components + MCP server
+- **FastAPI Template**: Jump-started with full-stack template, then cleaned
 
-[![API docs](img/dashboard-items.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## Features
 
-### Dashboard - User Settings
+- **Automated News Ingestion**: Fetches and processes articles from leading crypto news sources (DL News, The Defiant, Cointelegraph) with both scheduled background jobs and one-click manual ingestion buttons
+- **RAG Question Answering**: Ask questions about recent crypto news and get AI-powered answers with source citations
+- **Real-Time Streaming**: WebSocket-based streaming responses for immediate feedback
+- **Content Moderation**: Built-in filtering for profanity, spam, and prompt injection attacks
+- **Semantic Search**: Vector-based similarity search powered by pgvector for relevant article retrieval
+- **Automatic Deduplication**: Smart content hashing prevents duplicate articles
+- **Background Jobs**: Scheduled ingestion every 30 minutes and automatic cleanup of old articles
+- **Local LLM**: Runs entirely on Ollama - no external API costs or data sharing
 
-[![API docs](img/dashboard-user-settings.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## Technology Stack
 
-### Dashboard - Dark Mode
+### Backend
+- **FastAPI** - Modern async Python web framework (chosen for quick development + automatic OpenAPI docs)
+- **SQLModel** - Type-safe ORM (Pydantic + SQLAlchemy) for database operations
+- **PostgreSQL + pgvector** - Single database solution for both relational data and vector similarity search
+- **Ollama** - Local LLM server (nomic-embed-text for embeddings, llama3.2:3b for chat)
+- **LangChain** - Framework for RAG applications (RSSFeedLoader, document processing)
+- **APScheduler** - Background job scheduling for automatic ingestion
 
-[![API docs](img/dashboard-dark.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### Frontend
+- **React + TypeScript** - Modern frontend with type safety
+- **TanStack Query & Router** - Data fetching/caching and file-based routing
+- **Shadcn UI + Tailwind CSS** - Composable component library with dark mode support
+- **Playwright** - End-to-end testing framework
 
-### Interactive API Documentation
+### Infrastructure
+- **Docker Compose** - Local development environment with all services
+- **pytest** - Comprehensive test suite (unit tests, integration tests, E2E tests)
 
-[![API docs](img/docs.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## Architecture Overview
 
-## How To Use It
+The system follows a clean, service-oriented architecture:
 
-You can **just fork or clone** this repository and use it as is.
-
-✨ It just works. ✨
-
-### How to Use a Private Repository
-
-If you want to have a private repository, GitHub won't allow you to simply fork it as it doesn't allow changing the visibility of forks.
-
-But you can do the following:
-
-- Create a new GitHub repo, for example `my-full-stack`.
-- Clone this repository manually, set the name with the name of the project you want to use, for example `my-full-stack`:
-
-```bash
-git clone git@github.com:fastapi/full-stack-fastapi-template.git my-full-stack
+```
+Frontend (React)
+    ↓ WebSocket /ask
+Backend API (FastAPI)
+    ├─ News Ingestion Service
+    │   ├─ RSS Fetcher (LangChain + newspaper3k)
+    │   └─ Article Processor (embeddings + deduplication)
+    ├─ RAG Service
+    │   ├─ Semantic Search (pgvector)
+    │   └─ LLM Response Generation (Ollama)
+    └─ Content Moderation
+    ↓
+PostgreSQL + pgvector
+Ollama (Local LLM)
 ```
 
-- Enter into the new directory:
+**Design Pattern**: Service-oriented architecture with dependency injection for testability. All external dependencies injected via FastAPI's `Depends()` pattern, centralized in `deps.py`.
+
+For detailed technical documentation, see:
+- Backend: [backend/README.md](./backend/README.md)
+- Frontend: [frontend/README.md](./frontend/README.md)
+
+## Quick Start
+
+### Prerequisites
+
+- [Docker](https://www.docker.com/) and Docker Compose
+- [uv](https://docs.astral.sh/uv/) for Python development (optional, for local development)
+
+### 1. Clone and Configure
+
+Clone the repository:
 
 ```bash
-cd my-full-stack
+git clone https://github.com/vinialbano/crypto-news-agent.git
+cd crypto-news-agent
 ```
 
-- Set the new origin to your new repository, copy it from the GitHub interface, for example:
+Configure environment variables in `.env`:
 
 ```bash
-git remote set-url origin git@github.com:octocat/my-full-stack.git
-```
-
-- Add this repo as another "remote" to allow you to get updates later:
-
-```bash
-git remote add upstream git@github.com:fastapi/full-stack-fastapi-template.git
-```
-
-- Push the code to your new repository:
-
-```bash
-git push -u origin master
-```
-
-### Update From the Original Template
-
-After cloning the repository, and after doing changes, you might want to get the latest changes from this original template.
-
-- Make sure you added the original repository as a remote, you can check it with:
-
-```bash
-git remote -v
-
-origin    git@github.com:octocat/my-full-stack.git (fetch)
-origin    git@github.com:octocat/my-full-stack.git (push)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (fetch)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (push)
-```
-
-- Pull the latest changes without merging:
-
-```bash
-git pull --no-commit upstream master
-```
-
-This will download the latest changes from this template without committing them, that way you can check everything is right before committing.
-
-- If there are conflicts, solve them in your editor.
-
-- Once you are done, commit the changes:
-
-```bash
-git merge --continue
-```
-
-### Configure
-
-You can then update configs in the `.env` files to customize your configurations.
-
-Before deploying it, make sure you change at least the values for:
-
-- `SECRET_KEY`
-- `FIRST_SUPERUSER_PASSWORD`
-- `POSTGRES_PASSWORD`
-
-You can (and should) pass these as environment variables from secrets.
-
-Read the [deployment.md](./deployment.md) docs for more details.
-
-### Generate Secret Keys
-
-Some environment variables in the `.env` file have a default value of `changethis`.
-
-You have to change them with a secret key, to generate secret keys you can run the following command:
-
-```bash
+# Generate secure keys
 python -c "import secrets; print(secrets.token_urlsafe(32))"
+
+# Update .env with secure values
+POSTGRES_PASSWORD=<strong-password>
 ```
 
-Copy the content and use that as password / secret key. And run that again to generate another secure key.
+### 2. Start the Stack
 
-## How To Use It - Alternative With Copier
-
-This repository also supports generating a new project using [Copier](https://copier.readthedocs.io).
-
-It will copy all the files, ask you configuration questions, and update the `.env` files with your answers.
-
-### Install Copier
-
-You can install Copier with:
+Start all services with Docker Compose:
 
 ```bash
-pip install copier
+docker compose watch
 ```
 
-Or better, if you have [`pipx`](https://pipx.pypa.io/), you can run it with:
+This will start:
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **Frontend**: http://localhost:5173
+- **Database**: PostgreSQL with pgvector on port 5432
+- **Ollama**: Local LLM server on port 11434
 
-```bash
-pipx install copier
+### 3. Access the Application
+
+**Frontend**: Open http://localhost:5173
+
+### 4. Ingest Articles (Optional)
+
+Articles are automatically ingested every 30 minutes by a background scheduler. For immediate ingestion:
+
+1. Navigate to the **Articles** page at http://localhost:5173/articles
+2. Click one of the ingest buttons:
+   - **Ingest DL News**
+   - **Ingest The Defiant**
+   - **Ingest Cointelegraph**
+3. Wait for ingestion to complete (buttons will show loading spinner)
+4. New articles will appear automatically in the table
+
+### 5. Ask Questions About Crypto News
+
+Once articles are ingested:
+
+1. Navigate to the **Chat** page in the frontend
+2. Ask natural language questions like:
+   - "What are the latest developments in Bitcoin?"
+   - "Tell me about recent Ethereum updates"
+   - "What happened with DeFi this week?"
+3. Get streaming AI responses with source citations
+
+## Key Design Decisions
+
+### 1. FastAPI Template → Radical Simplification
+
+**Decision**: Started with FastAPI full-stack template, then removed some thousands of lines of production code.
+
+**Rationale**:
+- Quick start with batteries included (Docker, migrations, testing setup)
+- Template included production complexity not needed for this project
+- Removed: GitHub Actions, Traefik reverse proxy, email services, deployment scripts
+
+**Trade-off**: Spent time cleaning vs building from scratch, but gained solid foundation.
+
+**Result**: Focused codebase for learning while maintaining test infrastructure (pytest, Playwright, coverage).
+
+### 2. Config-Based News Sources (No Database CRUD)
+
+**Decision**: News sources defined in environment variables, not in database.
+
+**Rationale**:
+- Simpler: No admin UI needed to manage sources
+- Version controlled: Sources tracked in `.env` file
+- Deployment-friendly: Change sources without database migration
+
+**Trade-off**: Less dynamic (requires code deploy to add sources), but acceptable for this use case.
+
+**Implementation**: See `backend/app/core/config.py` - `news_sources` computed field.
+
+### 3. PostgreSQL + pgvector (No Separate Vector Database)
+
+**Decision**: Use pgvector extension in PostgreSQL instead of dedicated vector database (Qdrant, Weaviate, Pinecone).
+
+**Rationale**:
+- Single database: Relational data + vectors in one place
+- ACID compliance: Transactions work across all data
+- Familiar tooling: Standard PostgreSQL tools and backups
+- Lower complexity: One fewer service to deploy/manage
+
+**Trade-off**: Fewer vector search features vs specialized DBs, but sufficient for this scale.
+
+**Technical detail**: HNSW index for approximate nearest neighbor search (<0.5 cosine distance threshold).
+
+### 4. WebSocket for Streaming (Not SSE)
+
+**Decision**: WebSocket protocol for question answering instead of Server-Sent Events.
+
+**Rationale**:
+- Bi-directional: Can send metadata and receive responses in same connection
+- Simpler protocol: Less HTTP overhead for streaming
+- Built-in backpressure: Client can control flow
+
+**Implementation**: Rate limiting (10 questions/minute), timeout protection (3 minutes), structured protocol:
+```json
+{"type": "sources", "articles": [...]}
+{"type": "chunk", "content": "Bitcoin..."}
+{"type": "done"}
 ```
 
-**Note**: If you have `pipx`, installing copier is optional, you could run it directly.
+### 5. Strict Dependency Injection Pattern
 
-### Generate a Project With Copier
+**Decision**: ALL dependency factories must live in `backend/app/deps.py`.
 
-Decide a name for your new project's directory, you will use it below. For example, `my-awesome-project`.
+**Rationale**:
+- Testability: Easy to mock dependencies in unit tests
+- Consistency: Same dependency graph everywhere (API, scheduler, CLI)
+- Single Responsibility: Services never instantiate their own dependencies
 
-Go to the directory that will be the parent of your project, and run the command with your project's name:
+**Impact**: unit tests using dependency mocking, instead of monkey patching.
 
-```bash
-copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
+### 6. LangChain RSSFeedLoader + newspaper3k
+
+**Decision**: Use LangChain's RSSFeedLoader with newspaper3k for full-text extraction.
+
+**Rationale**:
+- LangChain integration: Fits naturally into RAG pipeline
+- Full-text extraction: newspaper3k gets complete article content (not just RSS summary)
+- Mature libraries: Battle-tested for content extraction
+
+**Challenge**: newspaper3k HTML parsing can fail on some sites → Implemented graceful fallback.
+
+### 7. Content Hash Deduplication
+
+**Decision**: SHA-256 hash of (title + URL) with unique database constraint.
+
+**Rationale**:
+- RSS feeds often republish same articles
+- Database-level enforcement prevents duplicates automatically
+- Fast lookup: Hash indexed for O(1) duplicate detection
+
+**Implementation**: See `backend/app/models.py` - `content_hash` field with unique constraint.
+
+## Technical Challenges Solved
+
+### Challenge 1: Ollama Startup Race Condition
+
+**Problem**: Backend starts before Ollama finishes loading models → connection failures.
+
+**Solution**:
+- Health check script with retry logic: `backend/scripts/prestart.sh`
+- Docker healthchecks: Wait for Ollama ready state
+- Graceful degradation: Log errors but continue startup
+
+**Code**: See `backend/app/core/config.py` - Ollama connection with timeout handling.
+
+### Challenge 2: Duplicate Article Detection with URL Normalization
+
+**Problem**: RSS feeds republish articles with different tracking parameters (utm_*, fbclid, timestamps), causing the same article to be stored multiple times.
+
+**Example**: These URLs point to the same article but have different query parameters:
+```
+https://example.com/article?utm_source=rss&timestamp=123
+https://example.com/article?utm_source=twitter&fbclid=xyz
+https://example.com/article?gclid=abc&utm_medium=cpc
 ```
 
-If you have `pipx` and you didn't install `copier`, you can run it directly:
+**Solution**:
+- **URL normalization**: Strip query parameters, fragments, trailing slashes before hashing
+- **Lowercase normalization**: Convert scheme, domain, and path to lowercase
+- **Content hash**: `SHA-256(title + normalized_url)` as unique identifier
+- **Database unique constraint**: Automatic duplicate rejection
+- **Fast lookup**: O(1) hash-based duplicate detection
 
-```bash
-pipx run copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
+**Implementation**:
+- `backend/app/services/url_utils.py` - URL normalization utility
+- `backend/app/services/article_processor.py` - Uses normalized URLs for hashing
+- Comprehensive test suite with real-world URLs
 
-**Note** the `--trust` option is necessary to be able to execute a [post-creation script](https://github.com/fastapi/full-stack-fastapi-template/blob/master/.copier/update_dotenv.py) that updates your `.env` files.
+**Result**: Zero duplicate articles in database, even with tracking parameters and overlapping RSS feeds.
 
-### Input Variables
+### Challenge 3: Real-Time Streaming UX
 
-Copier will ask you for some data, you might want to have at hand before generating the project.
+**Problem**: LLM responses take several seconds → need to show progress to user.
 
-But don't worry, you can just update any of that in the `.env` files afterwards.
+**Solution**:
+- WebSocket streaming: Token-by-token response delivery
+- Structured protocol: Send sources first, then stream content, then done signal
+- Frontend handling: Update UI as each token arrives
 
-The input variables, with their default values (some auto generated) are:
+**UX Impact**: Immediate feedback vs waiting for complete response (2-5 seconds vs 10-15 seconds perceived time).
 
-- `project_name`: (default: `"FastAPI Project"`) The name of the project, shown to API users (in .env).
-- `stack_name`: (default: `"fastapi-project"`) The name of the stack used for Docker Compose labels and project name (no spaces, no periods) (in .env).
-- `secret_key`: (default: `"changethis"`) The secret key for the project, used for security, stored in .env, you can generate one with the method above.
-- `first_superuser`: (default: `"admin@example.com"`) The email of the first superuser (in .env).
-- `first_superuser_password`: (default: `"changethis"`) The password of the first superuser (in .env).
-- `smtp_host`: (default: "") The SMTP server host to send emails, you can set it later in .env.
-- `smtp_user`: (default: "") The SMTP server user to send emails, you can set it later in .env.
-- `smtp_password`: (default: "") The SMTP server password to send emails, you can set it later in .env.
-- `emails_from_email`: (default: `"info@example.com"`) The email account to send emails from, you can set it later in .env.
-- `postgres_password`: (default: `"changethis"`) The password for the PostgreSQL database, stored in .env, you can generate one with the method above.
-- `sentry_dsn`: (default: "") The DSN for Sentry, if you are using it, you can set it later in .env.
+## Known Issues
 
-## Backend Development
+### RSS Feed Date Parsing Inconsistencies
 
-Backend docs: [backend/README.md](./backend/README.md).
+**Problem**: Some RSS feeds return `null` for publication dates even when `<pubDate>` exists in the RSS XML.
 
-## Frontend Development
+**Details**:
+- LangChain's `RSSFeedLoader` fails to parse dates from certain feeds (e.g., Cointelegraph)
+- Raw RSS XML contains valid `<pubDate>` tags: `<pubDate>Fri, 07 Nov 2025 23:51:58 +0000</pubDate>`
+- The `publish_date` field in document metadata is consistently `None` for these feeds
+- Other feeds (e.g., The Defiant) work correctly and return valid datetime objects
 
-Frontend docs: [frontend/README.md](./frontend/README.md).
+**Impact**:
+- Articles from affected feeds have `published_at: null` in the database
+- Semantic search and chat features still work (dates are optional)
+- Articles can still be ingested and deduplicated correctly
 
-## Deployment
+**Potential Solutions** (not implemented):
+- Use `feedparser` library as a fallback to parse dates directly from RSS XML
+- Parse dates from article content using NLP
+- Switch to alternative RSS feeds for affected sources
+- File issue with LangChain/newspaper3k projects
 
-Deployment docs: [deployment.md](./deployment.md).
+**Current Status**: Accepted limitation. Articles are stored without dates for some sources.
+
+## Trade-offs & Limitations
+
+### What I Sacrificed for Simplicity
+
+1. **Config-based sources vs Admin UI**
+   - Pro: Simpler code, version controlled
+   - Con: Can't add sources without deployment
+   - Decision: Config is sufficient for 3-5 sources
+
+2. **Local LLM vs Cloud APIs (OpenAI/Anthropic)**
+   - Pro: Zero API costs, complete privacy, learning experience
+   - Con: Slower inference (3-5 sec vs 1-2 sec), requires GPU for best performance
+   - Decision: Acceptable for demo, worth the learning
+
+3. **Single PostgreSQL vs Specialized Vector DB**
+   - Pro: Simpler deployment, familiar tooling, ACID compliance
+   - Con: Fewer vector search features (no filtering, clustering, etc.)
+   - Decision: pgvector sufficient for semantic search needs
+
+4. **Regex-based moderation vs ML model**
+   - Pro: Fast, predictable, no extra dependencies
+   - Con: Can be bypassed with creative spelling
+   - Decision: Good enough for profanity/spam, not production-grade
+
+5. **No authentication on /ask endpoint**
+   - Pro: Simpler demo, faster development
+   - Con: Open to abuse (rate limited per IP only)
+   - Decision: Fine for assessment, would add auth for production
+
+## What I'd Do Differently
+
+### If Starting Over:
+
+1. **Start with simpler template**
+   - FastAPI full-stack was overkill for this project
+   - Would use another template or build from scratch
+   - Saved time on setup, lost time on cleanup
+
+2. **Consider Qdrant/Weaviate for vectors**
+   - pgvector works, but specialized DBs have better features
+   - Filtering, hybrid search, clustering would be useful
+   - Trade-off: One more service to manage
+
+5. **Implement better error boundaries**
+   - Current error handling is basic (try/catch + logging)
+   - Structured errors with retry logic would be more robust
+   - Integration with an observability tool for production monitoring
+
+### Known Limitations:
+
+- **Embedding quality**: nomic-embed-text is good but not SOTA (768-dim vs 1536-dim OpenAI)
+- **No article ranking**: Just cosine distance, no relevance feedback or re-ranking
+- **No conversation memory**: Each question is independent (no follow-ups)
+- **Basic content moderation**: Regex-based, can be bypassed
+- **No caching**: Embeddings generated fresh each time (could cache query embeddings)
 
 ## Development
 
-General development docs: [development.md](./development.md).
+For detailed development instructions, see:
 
-This includes using Docker Compose, custom local domains, `.env` configurations, etc.
+- **Backend**: [backend/README.md](./backend/README.md) - API development, testing, migrations
+- **Frontend**: [frontend/README.md](./frontend/README.md) - React development, E2E testing, API client generation
 
-## Release Notes
+**Quick Commands**:
 
-Check the file [release-notes.md](./release-notes.md).
+```bash
+# Start all services with hot-reload
+docker compose watch
 
-## License
+# View logs
+docker compose logs -f backend
+docker compose logs -f frontend
 
-The Full Stack FastAPI Template is licensed under the terms of the MIT license.
+# Run backend tests
+cd backend && bash scripts/test-all.sh
+
+# Run frontend E2E tests
+cd frontend && npx playwright test
+
+# Generate API client (after backend changes)
+bash scripts/generate-client.sh
+```
+
+## Project Structure
+
+```
+crypto-news-agent/
+├── backend/              # FastAPI backend
+│   ├── app/
+│   │   ├── main.py      # Application entry point
+│   │   ├── routes.py    # API endpoints (REST + WebSocket)
+│   │   ├── models.py    # Database models (NewsArticle)
+│   │   ├── services/    # Business logic (ingestion, RAG, embeddings)
+│   │   ├── core/        # Configuration & database
+│   │   └── alembic/     # Database migrations
+│   ├── scripts/         # Development & test scripts
+│   ├── tests/           # Unit, integration, E2E tests
+│   └── README.md        # Backend documentation
+├── frontend/            # React frontend
+│   ├── src/
+│   │   ├── routes/      # Page components (TanStack Router)
+│   │   ├── components/  # Reusable UI components
+│   │   └── client/      # Auto-generated API client
+│   └── README.md        # Frontend documentation
+├── docker-compose.yml   # Docker services configuration
+├── .env                 # Environment configuration
+└── README.md           # This file
+```
+
+## Credits
+
+Built with:
+- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
+- [React](https://react.dev/) - UI library
+- [Ollama](https://ollama.ai/) - Local LLM server
+- [LangChain](https://www.langchain.com/) - LLM application framework
+- [pgvector](https://github.com/pgvector/pgvector) - Vector similarity search for PostgreSQL
+
+Based on [FastAPI Full Stack Template](https://github.com/fastapi/full-stack-fastapi-template) by Sebastián Ramírez.

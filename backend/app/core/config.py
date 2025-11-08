@@ -1,55 +1,28 @@
-import secrets
-import warnings
-from typing import Annotated, Any, Literal
+"""Application configuration."""
 
-from pydantic import (
-    AnyUrl,
-    BeforeValidator,
-    EmailStr,
-    HttpUrl,
-    PostgresDsn,
-    computed_field,
-    model_validator,
-)
+import os
+
+from pydantic import PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing_extensions import Self
-
-
-def parse_cors(v: Any) -> list[str] | str:
-    if isinstance(v, str) and not v.startswith("["):
-        return [i.strip() for i in v.split(",") if i.strip()]
-    elif isinstance(v, list | str):
-        return v
-    raise ValueError(v)
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        # Use top level .env file (one level above ./backend/)
-        env_file="../.env",
+        # Use .env.test for local testing (set TEST_MODE=1), otherwise use top level .env
+        env_file="../.env.test" if os.getenv("TEST_MODE") else "../.env",
         env_ignore_empty=True,
         extra="ignore",
     )
-    API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = secrets.token_urlsafe(32)
-    # 60 minutes * 24 hours * 8 days = 8 days
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
-    FRONTEND_HOST: str = "http://localhost:5173"
-    ENVIRONMENT: Literal["local", "staging", "production"] = "local"
-
-    BACKEND_CORS_ORIGINS: Annotated[
-        list[AnyUrl] | str, BeforeValidator(parse_cors)
-    ] = []
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def all_cors_origins(self) -> list[str]:
-        return [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS] + [
-            self.FRONTEND_HOST
-        ]
 
     PROJECT_NAME: str
-    SENTRY_DSN: HttpUrl | None = None
+    BACKEND_CORS_ORIGINS: list[str] = [
+        "http://localhost",
+        "http://localhost:5173",
+        "https://localhost",
+        "https://localhost:5173",
+    ]
+
+    # Database
     POSTGRES_SERVER: str
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str
@@ -68,52 +41,38 @@ class Settings(BaseSettings):
             path=self.POSTGRES_DB,
         )
 
-    SMTP_TLS: bool = True
-    SMTP_SSL: bool = False
-    SMTP_PORT: int = 587
-    SMTP_HOST: str | None = None
-    SMTP_USER: str | None = None
-    SMTP_PASSWORD: str | None = None
-    EMAILS_FROM_EMAIL: EmailStr | None = None
-    EMAILS_FROM_NAME: EmailStr | None = None
+    # Ollama configuration for LLM and embeddings
+    OLLAMA_HOST: str
+    OLLAMA_CHAT_MODEL: str
+    OLLAMA_EMBEDDING_MODEL: str
 
-    @model_validator(mode="after")
-    def _set_default_emails_from(self) -> Self:
-        if not self.EMAILS_FROM_NAME:
-            self.EMAILS_FROM_NAME = self.PROJECT_NAME
-        return self
-
-    EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
+    # News source RSS URLs
+    RSS_DL_NEWS: str
+    RSS_THE_DEFIANT: str
+    RSS_COINTELEGRAPH: str
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def emails_enabled(self) -> bool:
-        return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
+    def news_sources(self) -> list[dict[str, str]]:
+        """Get configured news sources from environment variables."""
+        return [
+            {"name": "DL News", "rss_url": self.RSS_DL_NEWS},
+            {"name": "The Defiant", "rss_url": self.RSS_THE_DEFIANT},
+            {"name": "Cointelegraph", "rss_url": self.RSS_COINTELEGRAPH},
+        ]
 
-    EMAIL_TEST_USER: EmailStr = "test@example.com"
-    FIRST_SUPERUSER: EmailStr
-    FIRST_SUPERUSER_PASSWORD: str
+    # Ingestion configuration
+    INGESTION_INTERVAL_MINUTES: int
+    ARTICLE_CLEANUP_DAYS: int = 30
 
-    def _check_default_secret(self, var_name: str, value: str | None) -> None:
-        if value == "changethis":
-            message = (
-                f'The value of {var_name} is "changethis", '
-                "for security, please change it, at least for deployments."
-            )
-            if self.ENVIRONMENT == "local":
-                warnings.warn(message, stacklevel=1)
-            else:
-                raise ValueError(message)
+    # RAG configuration
+    RAG_DISTANCE_THRESHOLD: float = 0.5
+    RAG_TOP_K_ARTICLES: int = 5
+    RAG_CONTEXT_PREVIEW_LENGTH: int = 500
 
-    @model_validator(mode="after")
-    def _enforce_non_default_secrets(self) -> Self:
-        self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
-        self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
-        self._check_default_secret(
-            "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
-        )
-
-        return self
+    # WebSocket configuration
+    WEBSOCKET_MAX_QUESTIONS_PER_MINUTE: int = 10
+    WEBSOCKET_CONNECTION_TIMEOUT_SECONDS: int = 300  # 5 minutes
 
 
 settings = Settings()  # type: ignore
