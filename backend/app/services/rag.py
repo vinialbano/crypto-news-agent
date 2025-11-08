@@ -104,8 +104,6 @@ Answer:"""
                 context=context, question=question
             )
 
-            print(formatted_prompt)
-
             async for chunk in self.chat_model.astream(formatted_prompt):
                 if hasattr(chunk, "content") and chunk.content:
                     yield {"type": "chunk", "content": chunk.content}

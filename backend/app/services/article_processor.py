@@ -7,6 +7,7 @@ from app.exceptions import ArticleProcessingError, DuplicateArticleError
 from app.models import NewsArticle
 from app.services.embeddings import EmbeddingsService
 from app.services.news_repository import NewsRepository
+from app.services.url_utils import normalize_url
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +43,11 @@ class ArticleProcessor:
             Created NewsArticle if successful, None if duplicate or error
         """
         try:
-            # Check for duplicates using content hash
-            content_hash = NewsArticle.compute_content_hash(title, url)
+            # Normalize URL for duplicate detection (removes query params & fragments)
+            normalized_url = normalize_url(url)
+
+            # Check for duplicates using content hash (with normalized URL)
+            content_hash = NewsArticle.compute_content_hash(title, normalized_url)
             existing = self.repository.get_article_by_hash(content_hash)
 
             if existing:

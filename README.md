@@ -255,16 +255,30 @@ Once articles are ingested (happens automatically every 30 minutes, or trigger m
 
 **Code**: See `backend/app/core/config.py` - Ollama connection with timeout handling.
 
-### Challenge 2: Duplicate Article Detection
+### Challenge 2: Duplicate Article Detection with URL Normalization
 
-**Problem**: RSS feeds republish articles with same content but different publish dates.
+**Problem**: RSS feeds republish articles with different tracking parameters (utm_*, fbclid, timestamps), causing the same article to be stored multiple times.
+
+**Example**: These URLs point to the same article but have different query parameters:
+```
+https://example.com/article?utm_source=rss&timestamp=123
+https://example.com/article?utm_source=twitter&fbclid=xyz
+https://example.com/article?gclid=abc&utm_medium=cpc
+```
 
 **Solution**:
-- Content hash: `SHA-256(title + url)` as unique identifier
-- Database unique constraint: Automatic duplicate rejection
-- Fast lookup: O(1) hash-based duplicate detection
+- **URL normalization**: Strip query parameters, fragments, trailing slashes before hashing
+- **Lowercase normalization**: Convert scheme, domain, and path to lowercase
+- **Content hash**: `SHA-256(title + normalized_url)` as unique identifier
+- **Database unique constraint**: Automatic duplicate rejection
+- **Fast lookup**: O(1) hash-based duplicate detection
 
-**Result**: Zero duplicate articles in database, even with overlapping RSS feeds.
+**Implementation**:
+- `backend/app/services/url_utils.py` - URL normalization utility
+- `backend/app/services/article_processor.py` - Uses normalized URLs for hashing
+- Comprehensive test suite with real-world URLs
+
+**Result**: Zero duplicate articles in database, even with tracking parameters and overlapping RSS feeds.
 
 ### Challenge 3: Real-Time Streaming UX
 
@@ -276,6 +290,31 @@ Once articles are ingested (happens automatically every 30 minutes, or trigger m
 - Frontend handling: Update UI as each token arrives
 
 **UX Impact**: Immediate feedback vs waiting for complete response (2-5 seconds vs 10-15 seconds perceived time).
+
+## Known Issues
+
+### RSS Feed Date Parsing Inconsistencies
+
+**Problem**: Some RSS feeds return `null` for publication dates even when `<pubDate>` exists in the RSS XML.
+
+**Details**:
+- LangChain's `RSSFeedLoader` fails to parse dates from certain feeds (e.g., Cointelegraph)
+- Raw RSS XML contains valid `<pubDate>` tags: `<pubDate>Fri, 07 Nov 2025 23:51:58 +0000</pubDate>`
+- The `publish_date` field in document metadata is consistently `None` for these feeds
+- Other feeds (e.g., The Defiant) work correctly and return valid datetime objects
+
+**Impact**:
+- Articles from affected feeds have `published_at: null` in the database
+- Semantic search and chat features still work (dates are optional)
+- Articles can still be ingested and deduplicated correctly
+
+**Potential Solutions** (not implemented):
+- Use `feedparser` library as a fallback to parse dates directly from RSS XML
+- Parse dates from article content using NLP
+- Switch to alternative RSS feeds for affected sources
+- File issue with LangChain/newspaper3k projects
+
+**Current Status**: Accepted limitation. Articles are stored without dates for some sources.
 
 ## Trade-offs & Limitations
 
